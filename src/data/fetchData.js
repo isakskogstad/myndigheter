@@ -67,16 +67,14 @@ export async function fetchAllAgencyData() {
   console.log('Fetching fresh agency data from GitHub...');
 
   // Fetch all data sources in parallel
-  const [scb, stkt, sfs, agv, esv, wd] = await Promise.all([
-    fetchJSON('scb.json'),
-    fetchJSON('stkt.json'),
-    fetchJSON('sfs.json'),
-    fetchJSON('agv.json'),
-    fetchJSON('esv.json'),
+  // merged.json contains 978 agencies with combined data from all sources
+  // wd.json has start/end dates from Wikidata
+  const [merged, wd] = await Promise.all([
+    fetchJSON('merged.json'),
     fetchJSON('wd.json'),
   ]);
 
-  const data = { scb, stkt, sfs, agv, esv, wd };
+  const data = { merged, wd };
 
   // Cache the data
   setCachedData(data);
@@ -92,72 +90,86 @@ export async function fetchAllAgencyData() {
  * org=orgNr, tel=phone, web=website, grp=group, city=city, host=host, sfs=SFS ref
  */
 export function transformAgencyData(rawData) {
-  const { scb, stkt, sfs, agv, wd } = rawData;
+  const { merged, wd } = rawData;
 
-  // Collect ALL unique agency names from ALL sources
-  // sfs.json has most (610), but we want the union of all
-  const allNames = new Set([
-    ...Object.keys(wd || {}),
-    ...Object.keys(stkt || {}),
-    ...Object.keys(sfs || {}),
-    ...Object.keys(agv || {}),
-    ...Object.keys(scb || {}),
-  ]);
+  // merged.json has 978 agencies with nested source data (esv, stkt, scb, sfs, agv)
+  // wd.json has start/end dates from Wikidata
+  // Use Map to deduplicate by normalized name (handles "Andra AP-fonden" vs "ANDRA AP-FONDEN")
+  const agencyMap = new Map();
 
-  const agencies = [];
+  Object.entries(merged).forEach(([name, sources]) => {
+    // Normalize name for deduplication (lowercase for comparison)
+    const normalizedKey = name.toLowerCase().trim();
+    // Extract data from each source within merged.json
+    const esv = sources.esv || {};
+    const stkt = sources.stkt || {};
+    const scb = sources.scb || {};
+    const sfs = sources.sfs || {};
+    const agv = sources.agv || {};
 
-  allNames.forEach(name => {
-    // Get data from all sources
+    // Get Wikidata for start/end dates
     const wdData = wd[name] || {};
-    const stktData = stkt[name] || {};
-    const scbData = scb[name] || {};
-    const sfsData = sfs[name] || {};
-    const agvData = agv[name] || {};
 
-    // Extract city from office address
-    const officeAddr = agvData.office_address || '';
+    // Get latest employee/FTE data from ESV (most complete)
+    const esvEmployees = esv.employees || {};
+    const esvFte = esv.fte || {};
+    const latestYear = Object.keys(esvEmployees).sort().pop();
+    const latestEmp = latestYear ? esvEmployees[latestYear] : undefined;
+    const latestFte = latestYear ? esvFte[latestYear] : undefined;
+
+    // Extract city from AGV office address
+    const officeAddr = agv.office_address || '';
     const cityMatch = officeAddr.match(/\d{3}\s*\d{2}\s+([A-ZÅÄÖ]+)/);
     const city = cityMatch ? cityMatch[1] : undefined;
-
-    // Get employee counts from SCB data
-    const scbEmployees = scbData.employees || {};
-    const latestYear = Object.keys(scbEmployees).sort().pop();
-    const latestEmp = latestYear ? scbEmployees[latestYear] : {};
 
     // Build compact agency object matching MyndigheterApp.jsx format
     const agency = {
       n: name,  // name
-      d: stktData.department || undefined,  // department (from stkt)
-      s: wdData.start || stktData.start || sfsData.start,  // start date
-      e: wdData.end || stktData.end || sfsData.end,  // end date (for dissolved agencies)
-      en: wdData.name_en,  // english name
-      sh: stktData.abbreviation,  // short name / abbreviation
-      emp: latestEmp.total,  // total employees
-      fte: stktData.fte?.[latestYear],  // FTE for latest year
-      w: latestEmp.women,  // women count
-      m: latestEmp.men,  // men count
-      str: stktData.structure,  // structure type
-      cof: stktData.cofog10,  // COFOG code
-      gd: stktData.has_gd,  // has generaldirektör
-      fteH: stktData.fte || {},  // FTE history
-      org: stktData.org_nr,  // organization number
-      tel: agvData.phone,  // telephone
-      web: agvData.website,  // website
-      grp: agvData.group,  // group
+      d: esv.department || stkt.department,  // department
+      s: wdData.start || stkt.start || sfs.start,  // start date
+      e: wdData.end || stkt.end || sfs.end,  // end date (for dissolved agencies)
+      en: esv.name_en || wdData.name_en,  // english name
+      sh: esv.short_name || stkt.abbreviation,  // short name
+      emp: latestEmp,  // total employees
+      fte: latestFte,  // FTE for latest year
+      w: scb.women,  // women count (from SCB)
+      m: scb.men,  // men count (from SCB)
+      str: stkt.structure,  // structure type
+      cof: stkt.cofog10,  // COFOG code
+      gd: stkt.has_gd,  // has generaldirektör
+      fteH: esvFte,  // FTE history
+      org: esv.org_nr || stkt.org_nr,  // organization number
+      tel: agv.phone,  // telephone
+      web: agv.website,  // website
+      grp: agv.group,  // group
       city: city,  // city
-      host: stktData.host_authority,  // host authority
-      sfs: sfsData.created_by,  // SFS reference
+      host: stkt.host_authority,  // host authority
+      sfs: sfs.created_by,  // SFS reference
     };
 
-    // Remove undefined properties to keep objects clean
+    // Remove undefined/empty properties to keep objects clean
     Object.keys(agency).forEach(key => {
-      if (agency[key] === undefined) delete agency[key];
+      if (agency[key] === undefined ||
+          (typeof agency[key] === 'object' && Object.keys(agency[key]).length === 0)) {
+        delete agency[key];
+      }
     });
 
-    agencies.push(agency);
+    // Deduplicate: if we already have this agency, merge data (prefer more complete entry)
+    if (agencyMap.has(normalizedKey)) {
+      const existing = agencyMap.get(normalizedKey);
+      // Keep the version with more data fields, or prefer properly capitalized name
+      const existingFields = Object.keys(existing).length;
+      const newFields = Object.keys(agency).length;
+      if (newFields > existingFields || (newFields === existingFields && name !== name.toUpperCase())) {
+        agencyMap.set(normalizedKey, agency);
+      }
+    } else {
+      agencyMap.set(normalizedKey, agency);
+    }
   });
 
-  return agencies;
+  return Array.from(agencyMap.values());
 }
 
 /**
