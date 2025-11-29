@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MoreHorizontal, Check, Search, ArrowUpDown, FilterX, FolderSearch } from 'lucide-react';
+import { MoreHorizontal, Check, ArrowUpDown, FilterX, FolderSearch } from 'lucide-react';
 import { deptColors } from '../../data/constants';
 
 const getShortDeptName = (dept) => {
@@ -25,11 +25,9 @@ const RegistryView = ({
 
   // Advanced Search Logic
   const filteredAgencies = useMemo(() => {
-    // Split search into terms for multi-word matching (simple fuzzy)
     const searchTerms = filterText.toLowerCase().split(' ').filter(Boolean);
 
     return agencies.filter(agency => {
-      // Search Match
       let matchesSearch = true;
       if (searchTerms.length > 0) {
         const searchableText = `${agency.n} ${agency.sh || ''} ${agency.org || ''}`.toLowerCase();
@@ -45,9 +43,20 @@ const RegistryView = ({
       return matchesSearch && matchesDept && matchesStatus;
     }).sort((a, b) => {
       let res = 0;
-      if (sortKey === 'employees') res = (b.emp || 0) - (a.emp || 0);
-      else if (sortKey === 'formed') res = (b.s || '').localeCompare(a.s || '');
-      else res = (a.n || '').localeCompare(b.n || '');
+      // Numeric sort with null handling (treat null as -1 to push to bottom in desc)
+      if (sortKey === 'employees') {
+        const valA = a.emp || -1;
+        const valB = b.emp || -1;
+        res = valA - valB;
+      }
+      else if (sortKey === 'formed') {
+        const valA = a.s || '';
+        const valB = b.s || '';
+        res = valA.localeCompare(valB);
+      }
+      else {
+        res = (a.n || '').localeCompare(b.n || '');
+      }
       
       return sortDir === 'asc' ? res : -res;
     });
@@ -57,11 +66,12 @@ const RegistryView = ({
     if (sortKey === key) setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
     else {
       setSortKey(key);
-      setSortDir('asc'); // Default to asc for new key (except maybe employees, but let's keep simple)
+      // Default to descending for numbers (employees), ascending for text
+      setSortDir(key === 'employees' ? 'desc' : 'asc');
     }
   };
 
-  const displayAgencies = filteredAgencies.slice(0, 100); // Increased limit
+  const displayAgencies = filteredAgencies.slice(0, 100);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -203,7 +213,7 @@ const RegistryView = ({
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 font-mono text-right old-style-nums font-medium">
-                        {agency.emp?.toLocaleString('sv-SE') || '–'}
+                        {agency.emp ? agency.emp.toLocaleString('sv-SE') : <span className="text-slate-300">–</span>}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 font-mono text-right old-style-nums hidden sm:table-cell">
                         {agency.s ? agency.s.split('-')[0] : '–'}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Share, ChevronRight, Command, Menu, X } from 'lucide-react';
+import { Search, Share, ChevronRight, Menu, X, Command } from 'lucide-react';
 
 const Header = ({ 
   activeTabLabel, 
@@ -7,15 +7,21 @@ const Header = ({
   onSearchChange, 
   onShare,
   onToggleMobileMenu,
-  agencies = [], // New prop
-  onSelectAgency // New prop
+  agencies = [], 
+  onSelectAgency 
 }) => {
   const [showResults, setShowResults] = useState(false);
 
-  // Filter suggestions (simple match)
+  // Filter suggestions
   const suggestions = searchQuery.length > 1 
     ? agencies.filter(a => a.n.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5) 
     : [];
+
+  const handleSelect = (agency) => {
+    onSelectAgency(agency);
+    setShowResults(false);
+    onSearchChange(''); // Clear search to avoid obstruction
+  };
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 z-30 sticky top-0 w-full transition-all duration-300">
@@ -50,7 +56,6 @@ const Header = ({
               setShowResults(true);
             }}
             onFocus={() => setShowResults(true)}
-            // Delay hiding to allow click
             onBlur={() => setTimeout(() => setShowResults(false), 200)} 
             className="w-32 sm:w-64 pl-9 pr-8 py-2 bg-white/50 border border-slate-200 rounded-xl text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 transition-all shadow-sm placeholder-stone-400 hover:bg-white"
           />
@@ -65,19 +70,16 @@ const Header = ({
           
           {/* Search Dropdown */}
           {showResults && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
               <div className="py-1">
                 {suggestions.map(agency => (
                   <button
                     key={agency.n}
-                    onClick={() => {
-                      onSelectAgency(agency);
-                      setShowResults(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex flex-col"
+                    onClick={() => handleSelect(agency)}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 flex flex-col border-b border-slate-50 last:border-0 transition-colors"
                   >
                     <span className="font-medium text-slate-900">{agency.n}</span>
-                    <span className="text-xs text-slate-500">{agency.d}</span>
+                    <span className="text-xs text-slate-500 mt-0.5">{agency.d}</span>
                   </button>
                 ))}
               </div>
