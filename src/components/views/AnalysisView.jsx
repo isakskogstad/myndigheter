@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { Briefcase, Calendar, ArrowRight, Zap, Scale, Info, PieChart } from 'lucide-react';
+import ds from '../../styles/designSystem';
 
 // Info tooltip component
 const InfoTooltip = ({ text }) => (
   <div className="group relative inline-block">
-    <Info className="w-4 h-4 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
-    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl z-50">
+    <Info className={ds.cn(ds.iconSizes.sm, 'text-slate-400 hover:text-slate-600 cursor-help', ds.animations.normal)} />
+    <div className={ds.cn('absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 text-white z-50', ds.typography.sizes.xs, ds.radius.md, ds.shadows.strong)} style={{ backgroundColor: ds.colors.slate[900] }}>
       {text}
-      <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-slate-900 transform rotate-45 -mt-1"></div>
+      <div className={ds.cn('absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 transform rotate-45 -mt-1')} style={{ backgroundColor: ds.colors.slate[900] }}></div>
     </div>
   </div>
 );
@@ -35,26 +36,26 @@ const LeaderboardModule = ({ agencies, onSelect }) => {
   }, [agencies, metric]);
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <div className={ds.cn('bg-white', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.card, ds.animations.normal)} style={{ borderColor: ds.colors.slate[200] }}>
+      <div className={ds.cn('flex flex-wrap justify-between items-center mb-6', ds.spacing.md)}>
         <div>
-          <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-500 fill-current" />
+          <h3 className={ds.cn('font-serif text-slate-900 flex items-center', ds.typography.sizes.xl, ds.typography.weights.bold, ds.spacing.sm)}>
+            <Zap className={ds.cn(ds.iconSizes.md, 'text-amber-500 fill-current')} />
             Topplista: Största Myndigheterna
             <InfoTooltip text="Visar de 10 största myndigheterna baserat på antal anställda eller årsarbetskrafter (FTE). Klicka på en stapel för mer detaljer." />
           </h3>
-          <p className="text-sm text-slate-500">De 10 största myndigheterna baserat på valt mått.</p>
+          <p className={ds.cn('text-slate-500', ds.typography.sizes.sm)}>De 10 största myndigheterna baserat på valt mått.</p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className={ds.cn('flex p-1', ds.radius.md)} style={{ backgroundColor: ds.colors.slate[100] }}>
           <button
             onClick={() => setMetric('emp')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${metric === 'emp' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+            className={ds.cn('px-3 py-1.5', ds.radius.md, ds.typography.sizes.xs, ds.typography.weights.medium, ds.animations.normal, metric === 'emp' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700')}
           >
             Anställda
           </button>
           <button
             onClick={() => setMetric('fte')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${metric === 'fte' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+            className={ds.cn('px-3 py-1.5', ds.radius.md, ds.typography.sizes.xs, ds.typography.weights.medium, ds.animations.normal, metric === 'fte' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700')}
           >
             Årsarbetskrafter (FTE)
           </button>
@@ -79,16 +80,16 @@ const LeaderboardModule = ({ agencies, onSelect }) => {
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip 
-              cursor={{ fill: '#f8fafc' }}
+            <Tooltip
+              cursor={{ fill: ds.colors.slate[50] }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-white p-3 border border-slate-200 shadow-xl rounded-xl text-sm">
-                      <div className="font-bold text-slate-900 mb-1">{d.name}</div>
+                    <div className={ds.cn('bg-white p-3 border', ds.radius.md, ds.shadows.strong, ds.typography.sizes.sm)} style={{ borderColor: ds.colors.slate[200] }}>
+                      <div className={ds.cn('text-slate-900 mb-1', ds.typography.weights.bold)}>{d.name}</div>
                       <div className="text-slate-500">
-                        {metric === 'emp' ? 'Anställda:' : 'FTE:'} <span className="font-mono font-medium text-slate-900">{d.value.toLocaleString('sv-SE')}</span>
+                        {metric === 'emp' ? 'Anställda:' : 'FTE:'} <span className={ds.cn('font-mono text-slate-900', ds.typography.weights.medium)}>{d.value.toLocaleString('sv-SE')}</span>
                       </div>
                     </div>
                   );
@@ -96,14 +97,14 @@ const LeaderboardModule = ({ agencies, onSelect }) => {
                 return null;
               }}
             />
-            <Bar 
-              dataKey="value" 
-              radius={[0, 6, 6, 0]} 
+            <Bar
+              dataKey="value"
+              radius={[0, 6, 6, 0]}
               onClick={(data) => onSelect(data.agency)}
               cursor="pointer"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={index < 3 ? '#0f172a' : '#94a3b8'} />
+                <Cell key={`cell-${index}`} fill={index < 3 ? ds.colors.slate[900] : ds.colors.slate[400]} />
               ))}
             </Bar>
           </BarChart>
@@ -130,29 +131,29 @@ const AgeVsSizeModule = ({ agencies }) => {
 
   if (data.length < 5) {
     return (
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+      <div className={ds.cn('bg-white flex flex-col', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.card, ds.animations.normal)} style={{ borderColor: ds.colors.slate[200] }}>
         <div className="mb-6">
-          <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-primary-500" />
+          <h3 className={ds.cn('font-serif text-slate-900 flex items-center', ds.typography.sizes.xl, ds.typography.weights.bold, ds.spacing.sm)}>
+            <Briefcase className={ds.cn(ds.iconSizes.md)} style={{ color: ds.colors.primary[500] }} />
             Storlek vs Ålder
           </h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-[300px]">
-          <p className="text-slate-400 text-sm">För få datapunkter att visa. Behöver minst 5 myndigheter med anställningsdata.</p>
+          <p className={ds.cn('text-slate-400', ds.typography.sizes.sm)}>För få datapunkter att visa. Behöver minst 5 myndigheter med anställningsdata.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+    <div className={ds.cn('bg-white flex flex-col', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.card, ds.animations.normal)} style={{ borderColor: ds.colors.slate[200] }}>
       <div className="mb-6">
-        <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-primary-500" />
+        <h3 className={ds.cn('font-serif text-slate-900 flex items-center', ds.typography.sizes.xl, ds.typography.weights.bold, ds.spacing.sm)}>
+          <Briefcase className={ds.cn(ds.iconSizes.md)} style={{ color: ds.colors.primary[500] }} />
           Storlek vs Ålder
           <InfoTooltip text="Scatter-plot som visar sambandet mellan myndighetens ålder och storlek. Större bubblor = fler anställda. Endast aktiva myndigheter med anställningsdata visas." />
         </h3>
-        <p className="text-sm text-slate-500">Är äldre myndigheter större? Varje bubbla är en myndighet.</p>
+        <p className={ds.cn('text-slate-500', ds.typography.sizes.sm)}>Är äldre myndigheter större? Varje bubbla är en myndighet.</p>
       </div>
 
       <div className="flex-1 min-h-[300px]">
@@ -176,18 +177,18 @@ const AgeVsSizeModule = ({ agencies }) => {
               width={40}
             />
             <ZAxis type="number" dataKey="size" range={[20, 400]} />
-            <Tooltip 
+            <Tooltip
               cursor={{ strokeDasharray: '3 3' }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-white p-3 border border-slate-200 shadow-xl rounded-xl text-sm z-50">
-                      <div className="font-bold text-slate-900 mb-1">{d.name}</div>
-                      <div className="text-slate-500 text-xs">{d.dept}</div>
-                      <div className="mt-2 flex justify-between gap-4">
+                    <div className={ds.cn('bg-white p-3 border z-50', ds.radius.md, ds.shadows.strong, ds.typography.sizes.sm)} style={{ borderColor: ds.colors.slate[200] }}>
+                      <div className={ds.cn('text-slate-900 mb-1', ds.typography.weights.bold)}>{d.name}</div>
+                      <div className={ds.cn('text-slate-500', ds.typography.sizes.xs)}>{d.dept}</div>
+                      <div className={ds.cn('mt-2 flex justify-between', ds.spacing.md)}>
                         <span className="text-slate-600">{d.age} år gammal</span>
-                        <span className="font-mono text-slate-900">{d.size.toLocaleString()} anst.</span>
+                        <span className={ds.cn('font-mono text-slate-900')}>{d.size.toLocaleString()} anst.</span>
                       </div>
                     </div>
                   );
@@ -195,7 +196,7 @@ const AgeVsSizeModule = ({ agencies }) => {
                 return null;
               }}
             />
-            <Scatter name="Myndigheter" data={data} fill="#0ea5e9" fillOpacity={0.6} />
+            <Scatter name="Myndigheter" data={data} fill={ds.colors.primary[500]} fillOpacity={0.6} />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -235,16 +236,16 @@ const GenderBalanceModule = ({ agencies, onSelect }) => {
     return (
       <div
         onClick={() => onSelect(item.agency)}
-        className={`group cursor-pointer hover:shadow-sm p-2 rounded-lg transition-all ${bgColor}`}
+        className={ds.cn('group cursor-pointer p-2', ds.radius.md, ds.animations.normal, ds.shadows.subtle, bgColor)}
       >
-        <div className="flex justify-between text-xs font-medium mb-1.5">
-          <span className="text-slate-700 truncate max-w-[180px] group-hover:text-primary-700 transition-colors">{item.name}</span>
-          <div className="flex gap-2 text-[10px]">
+        <div className={ds.cn('flex justify-between mb-1.5', ds.typography.sizes.xs, ds.typography.weights.medium)}>
+          <span className={ds.cn('text-slate-700 truncate max-w-[180px]', ds.animations.normal)} style={{ color: ds.colors.primary[700] }}>{item.name}</span>
+          <div className={ds.cn('flex', ds.spacing.sm, 'text-[10px]')}>
             <span className="text-pink-600">{item.womenPct}% K</span>
             <span className="text-indigo-600">{item.menPct}% M</span>
           </div>
         </div>
-        <div className="flex w-full h-2 rounded-full overflow-hidden bg-white">
+        <div className={ds.cn('flex w-full h-2 overflow-hidden bg-white', ds.radius.full)}>
           <div className="bg-pink-400 h-full" style={{ width: `${item.womenPct}%` }}></div>
           <div className="bg-indigo-500 h-full" style={{ width: `${item.menPct}%` }}></div>
         </div>
@@ -253,25 +254,25 @@ const GenderBalanceModule = ({ agencies, onSelect }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+    <div className={ds.cn('bg-white flex flex-col', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.card, ds.animations.normal)} style={{ borderColor: ds.colors.slate[200] }}>
       <div className="mb-6">
-        <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-          <Scale className="w-5 h-5 text-pink-500" />
+        <h3 className={ds.cn('font-serif text-slate-900 flex items-center', ds.typography.sizes.xl, ds.typography.weights.bold, ds.spacing.sm)}>
+          <Scale className={ds.cn(ds.iconSizes.md, 'text-pink-500')} />
           Jämställdhet (Top/Botten)
           <InfoTooltip text="Färgkodning: Grön = jämställt (45-55%), Rosa = >70% kvinnor, Blå = >70% män. Endast myndigheter med >100 anställda visas." />
         </h3>
-        <p className="text-sm text-slate-500">Myndigheter med högst andel kvinnor respektive män.</p>
+        <p className={ds.cn('text-slate-500', ds.typography.sizes.sm)}>Myndigheter med högst andel kvinnor respektive män.</p>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 gap-6">
+      <div className={ds.cn('flex-1 grid grid-cols-1', ds.spacing.lg)}>
         <div>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Högst andel kvinnor</h4>
+          <h4 className={ds.cn('text-slate-400 uppercase tracking-wider mb-3', ds.typography.sizes.xs, ds.typography.weights.bold)}>Högst andel kvinnor</h4>
           <div className="space-y-1">
             {topWomen.map(item => <Row key={item.name} item={item} />)}
           </div>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Högst andel män</h4>
+          <h4 className={ds.cn('text-slate-400 uppercase tracking-wider mb-3', ds.typography.sizes.xs, ds.typography.weights.bold)}>Högst andel män</h4>
           <div className="space-y-1">
             {topMen.map(item => <Row key={item.name} item={item} />)}
           </div>
@@ -288,31 +289,27 @@ const TimelineCard = ({ oldest, newest, onSelect }) => {
   const Icon = mode === 'oldest' ? Calendar : ArrowRight;
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-slate-50 rounded-xl">
-            <Icon className="w-5 h-5 text-slate-700" />
+    <div className={ds.cn('bg-white h-full flex flex-col', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.soft)} style={{ borderColor: ds.colors.slate[200] }}>
+      <div className={ds.cn('flex items-center justify-between mb-6')}>
+        <div className={ds.cn('flex items-center', ds.spacing.md)}>
+          <div className={ds.cn('p-2.5', ds.radius.md)} style={{ backgroundColor: ds.colors.slate[50] }}>
+            <Icon className={ds.cn(ds.iconSizes.md, 'text-slate-700')} />
           </div>
-          <h3 className="font-serif text-lg text-slate-900 font-semibold">
+          <h3 className={ds.cn('font-serif text-slate-900', ds.typography.sizes.lg, ds.typography.weights.semibold)}>
             {mode === 'oldest' ? 'Äldsta' : 'Nyaste'} (Aktiva)
           </h3>
         </div>
 
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className={ds.cn('flex p-1', ds.radius.md)} style={{ backgroundColor: ds.colors.slate[100] }}>
           <button
             onClick={() => setMode('oldest')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              mode === 'oldest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={ds.cn('px-3 py-1.5', ds.radius.md, ds.typography.sizes.xs, ds.typography.weights.medium, ds.animations.normal, mode === 'oldest' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700')}
           >
             Äldst
           </button>
           <button
             onClick={() => setMode('newest')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              mode === 'newest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={ds.cn('px-3 py-1.5', ds.radius.md, ds.typography.sizes.xs, ds.typography.weights.medium, ds.animations.normal, mode === 'newest' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700')}
           >
             Yngst
           </button>
@@ -324,19 +321,19 @@ const TimelineCard = ({ oldest, newest, onSelect }) => {
           <button
             key={item.n}
             onClick={() => onSelect(item)}
-            className="w-full flex items-center justify-between group hover:bg-slate-50 p-2.5 rounded-lg transition-colors text-left"
+            className={ds.cn('w-full flex items-center justify-between group p-2.5 text-left', ds.radius.md, ds.animations.normal, 'hover:bg-slate-50')}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+            <div className={ds.cn('flex items-center min-w-0', ds.spacing.md)}>
+              <span className={ds.cn('flex-shrink-0 w-6 h-6 flex items-center justify-center text-slate-500', ds.radius.full, ds.typography.sizes.xs, ds.typography.weights.bold, ds.animations.normal, 'group-hover:bg-white')} style={{ backgroundColor: ds.colors.slate[100] }}>
                 {index + 1}
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-medium text-slate-900 truncate group-hover:text-primary-700 transition-colors">
+                <div className={ds.cn('text-slate-900 truncate', ds.typography.sizes.sm, ds.typography.weights.medium, ds.animations.normal)} style={{ color: ds.colors.primary[700] }}>
                   {item.n}
                 </div>
               </div>
             </div>
-            <div className="text-xs font-mono font-medium text-slate-500 ml-4 old-style-nums group-hover:text-slate-900">
+            <div className={ds.cn('font-mono text-slate-500 ml-4 group-hover:text-slate-900', ds.typography.sizes.xs, ds.typography.weights.medium, ds.typography.numbers.oldstyle)}>
               {item.s?.split('-')[0]}
             </div>
           </button>
@@ -357,26 +354,26 @@ const AnalysisView = ({ agencies, onSelectAgency }) => {
   [agencies]);
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className={ds.cn('space-y-8 animate-fade-in')}>
       {/* Header */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs font-bold text-white uppercase tracking-wider mb-4">
+      <div className={ds.cn('bg-gradient-to-br p-8 md:p-12 text-white relative overflow-hidden', ds.radius.lg, ds.shadows.strong, ds.gradients.slate)}>
+        <div className={ds.cn('relative z-10', ds.containers.content)}>
+          <div className={ds.cn('inline-flex items-center px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white uppercase tracking-wider mb-4', ds.spacing.sm, ds.radius.full, ds.typography.sizes.xs, ds.typography.weights.bold)}>
             <PieChart className="w-3.5 h-3.5" />
             Djupanalys
           </div>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">Myndighetsanalys</h2>
-          <p className="text-slate-300 text-lg leading-relaxed">
+          <h2 className={ds.cn('font-serif mb-4', ds.typography.sizes['3xl'], 'md:text-4xl', ds.typography.weights.bold)}>Myndighetsanalys</h2>
+          <p className={ds.cn('text-slate-300', ds.typography.sizes.lg, ds.typography.leading.relaxed)}>
             Utforska extremvärden, korrelationer och trender i den svenska statsförvaltningen genom interaktiva visualiseringar.
           </p>
         </div>
         {/* Abstract Decor */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-primary-500/20 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-pink-500/20 blur-3xl rounded-full transform translate-y-1/2"></div>
+        <div className={ds.cn('absolute right-0 top-0 w-96 h-96 blur-3xl transform translate-x-1/2 -translate-y-1/2', ds.radius.full)} style={{ backgroundColor: `${ds.colors.primary[500]}33` }}></div>
+        <div className={ds.cn('absolute bottom-0 left-1/4 w-64 h-64 bg-pink-500/20 blur-3xl transform translate-y-1/2', ds.radius.full)}></div>
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={ds.cn('grid grid-cols-1 lg:grid-cols-3', ds.spacing.lg)}>
         {/* Full Width Leaderboard */}
         <div className="col-span-1 lg:col-span-2">
           <LeaderboardModule agencies={agencies} onSelect={onSelectAgency} />
