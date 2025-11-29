@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { 
   Area, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   ReferenceArea, ComposedChart, Legend, Label, LabelList
 } from 'recharts';
-import { Building2, Users, Play, Square, ArrowUp, ArrowDown, Minus, Download, BarChart3, LineChart, Activity } from 'lucide-react';
+import { Building2, Users, Play, Square, ArrowUp, ArrowDown, Minus, Download } from 'lucide-react';
 import SeriesSelector, { normalizeSeriesData } from '../SeriesSelector';
+import SeriesChartTypeSelector from '../SeriesChartTypeSelector';
 import RangeSlider from '../ui/RangeSlider';
 import { governmentPeriods, timeSeriesData, genderHistoryData } from '../../data/constants';
 import { getStatsByYear } from '../../data/swedenStats';
@@ -39,7 +40,7 @@ const StatCard = ({ title, value, subValue, icon: Icon, trend, colorClass = "bg-
   </div>
 );
 
-const DashboardView = ({ 
+const DashboardView = ({
   activeSeries,
   setActiveSeries,
   normalizeData,
@@ -49,16 +50,14 @@ const DashboardView = ({
   isAnimating,
   setIsAnimating,
   animationYear,
-  chartType, // Now controlled by parent
-  setChartType, // Now controlled by parent
+  seriesChartTypes,
+  setSeriesChartTypes,
   genderMode,
   setGenderMode,
   perCapita,
   setPerCapita,
   onReset
 }) => {
-  // Note: chartType is passed from parent now to ensure persistence, but we default to 'bar' if undefined
-  const currentChartType = chartType || 'bar';
 
   // Derived stats
   const currentYearData = timeSeriesData.find(d => d.year === (isAnimating ? animationYear : yearRange[1]));
@@ -136,7 +135,7 @@ const DashboardView = ({
   };
 
   // Dynamic Chart Component Generator
-  const renderSeries = (key, name, color, axis = 'left', strokeDash = '') => {
+  const renderSeries = (key, name, color, axis = 'left', strokeDash = '', chartType = 'area') => {
     const commonProps = {
       yAxisId: normalizeData ? 'left' : axis,
       dataKey: key,
@@ -147,17 +146,28 @@ const DashboardView = ({
       animationDuration: 500,
     };
 
-    if (currentChartType === 'bar') {
+    if (chartType === 'bar') {
       return (
         <Bar {...commonProps} radius={[4, 4, 0, 0]}>
-          {chartData.length < 30 && activeSeries[Object.keys(activeSeries).filter(k => activeSeries[k]).length === 1 ? Object.keys(activeSeries).find(k => activeSeries[k]) : ''] && (
-             <LabelList dataKey={key} position="top" style={{ fontSize: 10, fill: '#64748b' }} formatter={(v) => normalizeData ? v.toFixed(0) : v >= 1000 ? (v/1000).toFixed(1)+'k' : v} />
+          {chartData.length < 20 && (
+             <LabelList
+               dataKey={key}
+               position="top"
+               style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
+               formatter={(v) => {
+                 if (normalizeData) return v.toFixed(0);
+                 if (genderMode === 'share' && (key === 'w' || key === 'm')) return `${v.toFixed(0)}%`;
+                 if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+                 if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
+                 return Math.round(v);
+               }}
+             />
           )}
         </Bar>
       );
     }
     
-    if (currentChartType === 'line') {
+    if (chartType === 'line') {
       return (
         <Line {...commonProps} type="monotone" dot={false} activeDot={{ r: 6 }} strokeDasharray={strokeDash} strokeWidth={3} />
       );
@@ -206,6 +216,14 @@ const DashboardView = ({
             </button>
           </div>
         </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <SeriesChartTypeSelector
+            activeSeries={activeSeries}
+            seriesChartTypes={seriesChartTypes}
+            setSeriesChartTypes={setSeriesChartTypes}
+          />
+        </div>
       </div>
 
       <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-card relative overflow-hidden">
@@ -216,38 +234,15 @@ const DashboardView = ({
               {normalizeData ? `Indexerad utveckling (${yearRange[0]}=100)` : perCapita ? 'Per 100 000 invånare' : 'Absoluta tal'}
             </p>
           </div>
-          
-          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
-            <button 
-              onClick={() => setChartType('area')}
-              className={`p-2 rounded-lg transition-all ${currentChartType === 'area' ? 'bg-white shadow text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-              title="Ytdiagram (Area)"
-            >
-              <Activity className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => setChartType('bar')}
-              className={`p-2 rounded-lg transition-all ${currentChartType === 'bar' ? 'bg-white shadow text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-              title="Stapeldiagram (Bar)"
-            >
-              <BarChart3 className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => setChartType('line')}
-              className={`p-2 rounded-lg transition-all ${currentChartType === 'line' ? 'bg-white shadow text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-              title="Linjediagram (Line)"
-            >
-              <LineChart className="w-4 h-4" />
-            </button>
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
-            <button 
-              onClick={handleExportChart}
-              className="p-2 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-              title="Ladda ner CSV"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
+
+          <button
+            onClick={handleExportChart}
+            className="p-3 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-700 transition-colors border border-slate-200 bg-white shadow-sm flex items-center gap-2"
+            title="Ladda ner CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span className="text-sm font-medium">Exportera</span>
+          </button>
         </div>
 
         <div className="h-[500px] w-full">
@@ -325,13 +320,13 @@ const DashboardView = ({
                 ))
               }
 
-              {/* Dynamic Series Rendering */} 
-              {activeSeries.agencies && renderSeries('count', 'Antal Myndigheter', '#475569')}
-              {activeSeries.employees && renderSeries('emp', 'Antal Anställda', '#84a59d', 'left', '5 5')}
-              {activeSeries.population && renderSeries('population', 'Befolkning', '#94a3b8', 'right', '3 3')}
-              {activeSeries.gdp && renderSeries('gdp', 'BNP', '#d97706', 'right')}
-              {activeSeries.women && renderSeries('w', 'Kvinnor', '#be185d')}
-              {activeSeries.men && renderSeries('m', 'Män', '#4f46e5')}
+              {/* Dynamic Series Rendering */}
+              {activeSeries.agencies && renderSeries('count', 'Antal Myndigheter', '#475569', 'left', '', seriesChartTypes.agencies)}
+              {activeSeries.employees && renderSeries('emp', 'Antal Anställda', '#84a59d', 'left', '5 5', seriesChartTypes.employees)}
+              {activeSeries.population && renderSeries('population', 'Befolkning', '#94a3b8', 'right', '3 3', seriesChartTypes.population)}
+              {activeSeries.gdp && renderSeries('gdp', 'BNP', '#d97706', 'right', '', seriesChartTypes.gdp)}
+              {activeSeries.women && renderSeries('w', 'Kvinnor', '#be185d', 'left', '', seriesChartTypes.women)}
+              {activeSeries.men && renderSeries('m', 'Män', '#4f46e5', 'left', '', seriesChartTypes.men)}
 
             </ComposedChart>
           </ResponsiveContainer>
@@ -376,6 +371,78 @@ const DashboardView = ({
           </div>
         </div>
       </div>
+
+      {/* Animation Summary Card */}
+      {isAnimating && (() => {
+        const startYearData = timeSeriesData.find(d => d.year === yearRange[0]);
+        const currentAnimYearData = currentYearData;
+        const startGenderData = genderHistoryData.find(d => d.year === yearRange[0]);
+        const currentAnimGenderData = currentGenderData;
+
+        const agenciesDiff = (currentAnimYearData?.count || 0) - (startYearData?.count || 0);
+        const agenciesPct = startYearData?.count ? ((agenciesDiff / startYearData.count) * 100) : 0;
+
+        const employeesDiff = (currentAnimYearData?.emp || 0) - (startYearData?.emp || 0);
+        const employeesPct = startYearData?.emp ? ((employeesDiff / startYearData.emp) * 100) : 0;
+
+        const womenDiff = (currentAnimGenderData?.w || 0) - (startGenderData?.w || 0);
+        const startWomenShare = startGenderData ? Math.round((startGenderData.w / (startGenderData.w + startGenderData.m)) * 100) : 0;
+        const currentWomenShare = pctWomen;
+
+        return (
+          <div className="bg-gradient-to-br from-sky-50 to-white p-6 rounded-2xl border border-sky-200 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-sky-100 rounded-lg">
+                <Play className="w-5 h-5 text-sky-600" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg text-slate-900 font-semibold">
+                  Utveckling {yearRange[0]}–{animationYear}
+                </h4>
+                <p className="text-xs text-slate-500">Förändring sedan animeringsstart</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-100">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Myndigheter</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-serif font-semibold ${agenciesDiff >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {agenciesDiff >= 0 ? '+' : ''}{agenciesDiff}
+                  </span>
+                  <span className={`text-sm font-medium ${agenciesPct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    ({agenciesPct >= 0 ? '+' : ''}{agenciesPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-100">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Anställda</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-serif font-semibold ${employeesDiff >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {employeesDiff >= 0 ? '+' : ''}{Math.round(employeesDiff / 1000)}k
+                  </span>
+                  <span className={`text-sm font-medium ${employeesPct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    ({employeesPct >= 0 ? '+' : ''}{employeesPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-100">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kvinnor</p>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-serif font-semibold ${womenDiff >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {womenDiff >= 0 ? '+' : ''}{Math.round(womenDiff / 1000)}k
+                  </span>
+                  <span className="text-sm font-medium text-pink-600">
+                    [{startWomenShare}% → {currentWomenShare}%]
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

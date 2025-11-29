@@ -34,7 +34,7 @@ const useDarkMode = () => {
 };
 
 const ViewLoader = () => (
-  <div className="h-96 w-full flex items-center justify-center">
+  <div className="h-96 w-full flex items-center justify-center animate-fade-in">
     <div className="w-8 h-8 border-4 border-slate-200 border-t-primary-500 rounded-full animate-spin"></div>
   </div>
 );
@@ -51,11 +51,18 @@ export default function MyndigheterApp() {
   const [activeSeries, setActiveSeries] = useUrlState('series', { agencies: true, employees: false });
   const [normalizeData, setNormalizeData] = useUrlState('index', false);
   const [perCapita, setPerCapita] = useUrlState('capita', false);
-  const [chartType, setChartType] = useUrlState('chart', 'area');
+  const [seriesChartTypes, setSeriesChartTypes] = useUrlState('chartTypes', {
+    agencies: 'bar',
+    employees: 'line',
+    women: 'area',
+    men: 'area',
+    population: 'line',
+    gdp: 'line'
+  });
   const [genderMode, setGenderMode] = useUrlState('gender', 'count');
 
   const [deptFilter, setDeptFilter] = useUrlState('dept', 'all');
-  const [statusFilter, setStatusFilter] = useUrlState('status', 'all');
+  const [statusFilter, setStatusFilter] = useUrlState('status', 'active');
 
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -121,7 +128,14 @@ export default function MyndigheterApp() {
     setPerCapita(false);
     setGenderMode('count');
     setYearRange([1978, 2025]);
-    setChartType('area');
+    setSeriesChartTypes({
+      agencies: 'bar',
+      employees: 'line',
+      women: 'area',
+      men: 'area',
+      population: 'line',
+      gdp: 'line'
+    });
   };
 
   if (loading) return <LoadingState message="Laddar myndighetsdata..." />;
@@ -165,7 +179,7 @@ export default function MyndigheterApp() {
 
       <Suspense fallback={<ViewLoader />}>
         {activeTab === 'overview' && (
-          <DashboardView 
+          <DashboardView
             activeSeries={activeSeries}
             setActiveSeries={setActiveSeries}
             normalizeData={normalizeData}
@@ -174,8 +188,8 @@ export default function MyndigheterApp() {
             setYearRange={setYearRange}
             perCapita={perCapita}
             setPerCapita={setPerCapita}
-            chartType={chartType}
-            setChartType={setChartType}
+            seriesChartTypes={seriesChartTypes}
+            setSeriesChartTypes={setSeriesChartTypes}
             genderMode={genderMode}
             setGenderMode={setGenderMode}
             onReset={handleDashboardReset}

@@ -3,7 +3,18 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   ScatterChart, Scatter, ZAxis
 } from 'recharts';
-import { Users, Briefcase, Calendar, ArrowRight, Zap, Scale } from 'lucide-react';
+import { Briefcase, Calendar, ArrowRight, Zap, Scale, Info } from 'lucide-react';
+
+// Info tooltip component
+const InfoTooltip = ({ text }) => (
+  <div className="group relative inline-block">
+    <Info className="w-4 h-4 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl z-50">
+      {text}
+      <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-slate-900 transform rotate-45 -mt-1"></div>
+    </div>
+  </div>
+);
 
 // --- Sub-components for specific visualizations ---
 
@@ -28,8 +39,9 @@ const LeaderboardModule = ({ agencies, onSelect }) => {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
           <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-500 fill-current" /> 
+            <Zap className="w-5 h-5 text-amber-500 fill-current" />
             Topplista: Största Myndigheterna
+            <InfoTooltip text="Visar de 10 största myndigheterna baserat på antal anställda eller årsarbetskrafter (FTE). Klicka på en stapel för mer detaljer." />
           </h3>
           <p className="text-sm text-slate-500">De 10 största myndigheterna baserat på valt mått.</p>
         </div>
@@ -116,12 +128,29 @@ const AgeVsSizeModule = ({ agencies }) => {
       .filter(d => !isNaN(d.age));
   }, [agencies]);
 
+  if (data.length < 5) {
+    return (
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1 flex flex-col">
+        <div className="mb-6">
+          <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-primary-500" />
+            Storlek vs Ålder
+          </h3>
+        </div>
+        <div className="flex-1 flex items-center justify-center min-h-[300px]">
+          <p className="text-slate-400 text-sm">För få datapunkter att visa. Filtrerar bort myndigheter under 50 anställda.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1 flex flex-col">
       <div className="mb-6">
         <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-primary-500" /> 
+          <Briefcase className="w-5 h-5 text-primary-500" />
           Storlek vs Ålder
+          <InfoTooltip text="Scatter-plot som visar sambandet mellan myndighetens ålder och storlek. Större bubblor = fler anställda. Endast myndigheter med >50 anställda visas." />
         </h3>
         <p className="text-sm text-slate-500">Är äldre myndigheter större? Varje bubbla är en myndighet.</p>
       </div>
@@ -192,31 +221,44 @@ const GenderBalanceModule = ({ agencies, onSelect }) => {
   const topWomen = data.slice(0, 5);
   const topMen = data.slice(5).reverse(); // Reverse to show highest men pct descending
 
-  const Row = ({ item }) => (
-    <div 
-      onClick={() => onSelect(item.agency)}
-      className="group cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-    >
-      <div className="flex justify-between text-xs font-medium mb-1.5">
-        <span className="text-slate-700 truncate max-w-[180px] group-hover:text-primary-700 transition-colors">{item.name}</span>
-        <div className="flex gap-2 text-[10px]">
-          <span className="text-pink-600">{item.womenPct}% K</span>
-          <span className="text-indigo-600">{item.menPct}% M</span>
+  const Row = ({ item }) => {
+    // Color coding based on gender balance
+    let bgColor = 'bg-slate-50';
+    if (item.womenPct >= 45 && item.womenPct <= 55) {
+      bgColor = 'bg-emerald-50'; // Balanced
+    } else if (item.womenPct > 70) {
+      bgColor = 'bg-pink-50'; // High women
+    } else if (item.menPct > 70) {
+      bgColor = 'bg-indigo-50'; // High men
+    }
+
+    return (
+      <div
+        onClick={() => onSelect(item.agency)}
+        className={`group cursor-pointer hover:shadow-sm p-2 rounded-lg transition-all ${bgColor}`}
+      >
+        <div className="flex justify-between text-xs font-medium mb-1.5">
+          <span className="text-slate-700 truncate max-w-[180px] group-hover:text-primary-700 transition-colors">{item.name}</span>
+          <div className="flex gap-2 text-[10px]">
+            <span className="text-pink-600">{item.womenPct}% K</span>
+            <span className="text-indigo-600">{item.menPct}% M</span>
+          </div>
+        </div>
+        <div className="flex w-full h-2 rounded-full overflow-hidden bg-white">
+          <div className="bg-pink-400 h-full" style={{ width: `${item.womenPct}%` }}></div>
+          <div className="bg-indigo-500 h-full" style={{ width: `${item.menPct}%` }}></div>
         </div>
       </div>
-      <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-100">
-        <div className="bg-pink-400 h-full" style={{ width: `${item.womenPct}%` }}></div>
-        <div className="bg-indigo-500 h-full" style={{ width: `${item.menPct}%` }}></div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm col-span-1 flex flex-col">
       <div className="mb-6">
         <h3 className="font-serif text-xl text-slate-900 font-bold flex items-center gap-2">
-          <Scale className="w-5 h-5 text-pink-500" /> 
+          <Scale className="w-5 h-5 text-pink-500" />
           Jämställdhet (Top/Botten)
+          <InfoTooltip text="Färgkodning: Grön = jämställt (45-55%), Rosa = >70% kvinnor, Blå = >70% män. Endast myndigheter med >100 anställda visas." />
         </h3>
         <p className="text-sm text-slate-500">Myndigheter med högst andel kvinnor respektive män.</p>
       </div>
@@ -239,41 +281,70 @@ const GenderBalanceModule = ({ agencies, onSelect }) => {
   );
 };
 
-// 4. Simple List Card (Reusable)
-const SimpleListModule = ({ title, icon: Icon, items, valueFormatter, onSelect }) => (
-  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-full flex flex-col">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="p-2.5 bg-slate-50 rounded-xl">
-        <Icon className="w-5 h-5 text-slate-700" />
+// 4. Timeline Card with Toggle (Oldest/Newest)
+const TimelineCard = ({ oldest, newest, onSelect }) => {
+  const [mode, setMode] = useState('oldest');
+  const items = mode === 'oldest' ? oldest : newest;
+  const Icon = mode === 'oldest' ? Calendar : ArrowRight;
+
+  return (
+    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-full flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-slate-50 rounded-xl">
+            <Icon className="w-5 h-5 text-slate-700" />
+          </div>
+          <h3 className="font-serif text-lg text-slate-900 font-semibold">
+            {mode === 'oldest' ? 'Äldsta' : 'Nyaste'} (Aktiva)
+          </h3>
+        </div>
+
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setMode('oldest')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              mode === 'oldest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Äldst
+          </button>
+          <button
+            onClick={() => setMode('newest')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              mode === 'newest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Yngst
+          </button>
+        </div>
       </div>
-      <h3 className="font-serif text-lg text-slate-900 font-semibold">{title}</h3>
-    </div>
-    
-    <div className="space-y-1 flex-1">
-      {items.map((item, index) => (
-        <button
-          key={item.n}
-          onClick={() => onSelect(item)}
-          className="w-full flex items-center justify-between group hover:bg-slate-50 p-2.5 rounded-lg transition-colors text-left"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-slate-900 truncate group-hover:text-primary-700 transition-colors">
-                {item.n}
+
+      <div className="space-y-1 flex-1">
+        {items.map((item, index) => (
+          <button
+            key={item.n}
+            onClick={() => onSelect(item)}
+            className="w-full flex items-center justify-between group hover:bg-slate-50 p-2.5 rounded-lg transition-colors text-left"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-slate-900 truncate group-hover:text-primary-700 transition-colors">
+                  {item.n}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-xs font-mono font-medium text-slate-500 ml-4 old-style-nums group-hover:text-slate-900">
-            {valueFormatter(item)}
-          </div>
-        </button>
-      ))}
+            <div className="text-xs font-mono font-medium text-slate-500 ml-4 old-style-nums group-hover:text-slate-900">
+              {item.s?.split('-')[0]}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const AnalysisView = ({ agencies, onSelectAgency }) => {
   
@@ -313,20 +384,11 @@ const AnalysisView = ({ agencies, onSelectAgency }) => {
            <AgeVsSizeModule agencies={agencies} />
         </div>
 
-        {/* Side Lists */}
-        <div className="col-span-1 grid grid-cols-1 gap-6">
-          <SimpleListModule 
-            title="Äldsta (Aktiva)" 
-            icon={Calendar} 
-            items={oldest} 
-            valueFormatter={a => a.s?.split('-')[0]}
-            onSelect={onSelectAgency}
-          />
-          <SimpleListModule 
-            title="Nyaste (Aktiva)" 
-            icon={ArrowRight} 
-            items={newest} 
-            valueFormatter={a => a.s?.split('-')[0]}
+        {/* Timeline Card */}
+        <div className="col-span-1">
+          <TimelineCard
+            oldest={oldest}
+            newest={newest}
             onSelect={onSelectAgency}
           />
         </div>

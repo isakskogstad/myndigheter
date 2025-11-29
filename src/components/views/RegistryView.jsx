@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MoreHorizontal, Check, ArrowUpDown, FilterX, FolderSearch, Building2, Archive } from 'lucide-react';
+import { MoreHorizontal, Check, ArrowUpDown, FilterX, FolderSearch, Building2, Archive, Download } from 'lucide-react';
 import { deptColors } from '../../data/constants';
 
 const getShortDeptName = (dept) => {
@@ -22,6 +22,30 @@ const RegistryView = ({
 }) => {
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+
+  const handleExportCSV = () => {
+    const headers = ['Namn', 'Kortnamn', 'Departement', 'Anställda', 'FTE', 'Org.nr', 'Bildad', 'Status'];
+    const csvContent = [
+      headers.join(';'),
+      ...filteredAgencies.map(a => [
+        a.n,
+        a.sh || '',
+        a.d || '',
+        a.emp || '',
+        a.fte || '',
+        a.org || '',
+        a.s || '',
+        a.e ? 'Nedlagd' : 'Aktiv'
+      ].join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `myndigheter-${statusFilter}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
 
   // Set default status to 'active' if 'all' (initial load override logic handled in parent or here)
   // But since parent controls state, we should respect it. 
@@ -122,7 +146,7 @@ const RegistryView = ({
             </select>
             
             {(deptFilter !== 'all' || statusFilter !== 'active' || filterText) && (
-              <button 
+              <button
                 onClick={() => {
                   setDeptFilter('all');
                   setStatusFilter('active'); // Reset to active
@@ -134,6 +158,16 @@ const RegistryView = ({
                 <FilterX className="w-5 h-5" />
               </button>
             )}
+
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+              title="Exportera filtrerad lista"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Exportera ({filteredAgencies.length})</span>
+              <span className="sm:hidden">{filteredAgencies.length}</span>
+            </button>
           </div>
           
           <span className="text-xs font-mono text-slate-400 uppercase tracking-wider whitespace-nowrap">
