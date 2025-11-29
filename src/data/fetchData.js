@@ -94,12 +94,21 @@ export async function fetchAllAgencyData() {
 export function transformAgencyData(rawData) {
   const { scb, stkt, sfs, agv, wd } = rawData;
 
-  // Use wd (Wikidata) as base - it has ALL agencies including dissolved ones (~700+)
-  // stkt only has active agencies (~350)
+  // Collect ALL unique agency names from ALL sources
+  // sfs.json has most (610), but we want the union of all
+  const allNames = new Set([
+    ...Object.keys(wd || {}),
+    ...Object.keys(stkt || {}),
+    ...Object.keys(sfs || {}),
+    ...Object.keys(agv || {}),
+    ...Object.keys(scb || {}),
+  ]);
+
   const agencies = [];
 
-  Object.entries(wd).forEach(([name, wdData]) => {
-    // Get additional data from other sources
+  allNames.forEach(name => {
+    // Get data from all sources
+    const wdData = wd[name] || {};
     const stktData = stkt[name] || {};
     const scbData = scb[name] || {};
     const sfsData = sfs[name] || {};
@@ -119,8 +128,8 @@ export function transformAgencyData(rawData) {
     const agency = {
       n: name,  // name
       d: stktData.department || undefined,  // department (from stkt)
-      s: wdData.start || stktData.start,  // start date
-      e: wdData.end || stktData.end,  // end date (for dissolved agencies)
+      s: wdData.start || stktData.start || sfsData.start,  // start date
+      e: wdData.end || stktData.end || sfsData.end,  // end date (for dissolved agencies)
       en: wdData.name_en,  // english name
       sh: stktData.abbreviation,  // short name / abbreviation
       emp: latestEmp.total,  // total employees
