@@ -65,7 +65,7 @@ const DashboardView = ({
   }, [yearRange, isAnimating, animationYear, normalizeData, activeSeries]);
 
   const handleExportChart = () => {
-    const headers = ['År', 'Myndigheter', 'Anställda', 'Befolkning', 'BNP', 'Kvinnor', 'Män'];
+    const headers = ['År', 'Myndigheter', 'Anställda', 'Befolkning', 'BNP (MSEK)', 'Kvinnor', 'Män'];
     const csvContent = [
       headers.join(';'),
       ...chartData.map(d => [
@@ -85,6 +85,14 @@ const DashboardView = ({
     link.href = url;
     link.download = `myndighetsutveckling-${yearRange[0]}-${yearRange[1]}.csv`;
     link.click();
+  };
+
+  // Helper to format Y-axis ticks
+  const formatYAxis = (value) => {
+    if (normalizeData) return value.toFixed(0);
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+    return value;
   };
 
   return (
@@ -190,17 +198,23 @@ const DashboardView = ({
               />
               <YAxis 
                 yAxisId="left"
-                hide={true} 
+                hide={false}
+                tickFormatter={formatYAxis}
                 domain={normalizeData ? ['auto', 'auto'] : [0, 'auto']}
+                tick={{fill: '#a8a29e', fontSize: 11}}
+                width={40}
               />
               <YAxis 
                 yAxisId="right" 
                 orientation="right" 
-                hide={true}
+                hide={normalizeData ? true : (!activeSeries.population && !activeSeries.gdp)}
+                tickFormatter={formatYAxis}
+                tick={{fill: '#d97706', fontSize: 11}}
+                width={40}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.98)', 
                   border: '1px solid #e7e5e4', 
                   borderRadius: '12px',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
@@ -208,10 +222,12 @@ const DashboardView = ({
                 }}
                 labelStyle={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: '#1c1917', marginBottom: '8px' }}
                 itemStyle={{ fontSize: '13px', padding: '2px 0' }}
-                formatter={(value, name) => [
-                  normalizeData ? value.toFixed(1) : value.toLocaleString('sv-SE'), 
-                  name
-                ]}
+                formatter={(value, name) => {
+                  if (normalizeData) return [value.toFixed(1), name];
+                  if (name === 'Befolkning') return [value.toLocaleString('sv-SE'), name];
+                  if (name === 'BNP') return [`${value.toLocaleString('sv-SE')} MSEK`, name];
+                  return [value.toLocaleString('sv-SE'), name];
+                }}
               />
               
               {/* Governments Background */}
@@ -277,6 +293,20 @@ const DashboardView = ({
                 />
               )}
 
+              {/* Population Line */}
+              {activeSeries.population && (
+                <Line 
+                  yAxisId={normalizeData ? "left" : "right"}
+                  type="monotone" 
+                  dataKey="population" 
+                  name="Befolkning"
+                  stroke="#a8a29e" 
+                  strokeWidth={2} 
+                  dot={false}
+                  strokeDasharray="3 3"
+                />
+              )}
+
               {/* GDP Line */}
               {activeSeries.gdp && (
                 <Line 
@@ -334,7 +364,7 @@ const DashboardView = ({
           
           <div className="w-full bg-stone-100 rounded-full h-3 mb-2 overflow-hidden">
             <div 
-              className="bg-sage-400 h-full rounded-full transition-all duration-1000 ease-out"
+              className="bg-sage-400 h-full rounded-full transition-all duration-1000 ease-out" 
               style={{ width: `${pctWomen}%` }}
             />
           </div>
