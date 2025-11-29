@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, PieChart, Table2, Building2, MapPin } from 'lucide-react';
+import ds from '../../styles/designSystem';
 
 const BottomNav = ({ activeTab, onTabChange }) => {
   const navItems = [
@@ -11,7 +12,7 @@ const BottomNav = ({ activeTab, onTabChange }) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 lg:hidden z-40 pb-safe">
+    <nav className={ds.cn('fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t lg:hidden z-40 pb-safe')} style={{ borderColor: ds.colors.slate[200] }}>
       <div className="flex justify-around items-center h-16">
         {navItems.map(item => {
           const Icon = item.icon;
@@ -20,10 +21,10 @@ const BottomNav = ({ activeTab, onTabChange }) => {
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`flex flex-col items-center justify-center w-full h-full gap-1 ${isActive ? 'text-primary-600' : 'text-slate-400 hover:text-slate-600'}`}
+              className={ds.cn('flex flex-col items-center justify-center w-full h-full', ds.spacing.xs)} style={{ color: isActive ? ds.colors.primary[600] : ds.colors.slate[400] }}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'fill-primary-100' : ''}`} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <Icon className={ds.cn(ds.iconSizes.md)} style={{ fill: isActive ? ds.colors.primary[100] : undefined }} />
+              <span className={ds.cn(ds.typography.weights.medium)} style={{ fontSize: '10px' }}>{item.label}</span>
             </button>
           );
         })}
