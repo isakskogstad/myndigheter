@@ -143,6 +143,14 @@ export default function MyndigheterApp() {
           filterText={searchQuery}
           setFilterText={setSearchQuery}
           onSelectAgency={setSelectedAgency}
+          onToggleCompare={(agency) => {
+            setCompareList(prev => {
+              if (prev.find(a => a.n === agency.n)) return prev.filter(a => a.n !== agency.n);
+              if (prev.length >= 3) return prev;
+              return [...prev, agency];
+            });
+          }}
+          compareList={compareList}
         />
       )}
 

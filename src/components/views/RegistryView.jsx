@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Check } from 'lucide-react';
 import { deptColors } from '../../data/constants';
 
 const getShortDeptName = (dept) => {
@@ -12,7 +12,9 @@ const RegistryView = ({
   departments,
   filterText, 
   setFilterText,
-  onSelectAgency 
+  onSelectAgency,
+  onToggleCompare,
+  compareList
 }) => {
   const [deptFilter, setDeptFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -100,51 +102,62 @@ const RegistryView = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {displayAgencies.map((agency) => (
-                <tr 
-                  key={agency.n} 
-                  onClick={() => onSelectAgency(agency)}
-                  className="group hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-slate-900 text-sm group-hover:text-primary-700 transition-colors flex items-center gap-2">
-                      {agency.n}
-                      {agency.e && <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">Nedlagd</span>}
-                    </div>
-                    <div className="text-xs text-slate-400 font-mono mt-0.5">{agency.org || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span 
-                      className="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-opacity-10"
-                      style={{ 
-                        backgroundColor: `${deptColors[agency.d]}15`, 
-                        color: deptColors[agency.d],
-                        borderColor: `${deptColors[agency.d]}30`
-                      }}
-                    >
-                      {getShortDeptName(agency.d)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    {agency.str && (
-                      <span className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                        {agency.str}
+              {displayAgencies.map((agency) => {
+                const isSelected = compareList.some(a => a.n === agency.n);
+                return (
+                  <tr 
+                    key={agency.n} 
+                    onClick={() => onSelectAgency(agency)}
+                    className="group hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-900 text-sm group-hover:text-primary-700 transition-colors flex items-center gap-2">
+                        {agency.n}
+                        {agency.e && <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">Nedlagd</span>}
+                      </div>
+                      <div className="text-xs text-slate-400 font-mono mt-0.5">{agency.org || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span 
+                        className="inline-flex items-center px-2 py-1 rounded text-xs font-medium border bg-opacity-10"
+                        style={{ 
+                          backgroundColor: `${deptColors[agency.d]}15`, 
+                          color: deptColors[agency.d],
+                          borderColor: `${deptColors[agency.d]}30`
+                        }}
+                      >
+                        {getShortDeptName(agency.d)}
                       </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600 font-mono text-right old-style-nums">
-                    {agency.fte?.toLocaleString('sv-SE') || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-500 font-mono text-right old-style-nums">
-                    {agency.s ? agency.s.split('-')[0] : '-'}
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <button className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600 transition-colors">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {agency.str && (
+                        <span className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                          {agency.str}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600 font-mono text-right old-style-nums">
+                      {agency.fte?.toLocaleString('sv-SE') || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500 font-mono text-right old-style-nums">
+                      {agency.s ? agency.s.split('-')[0] : '-'}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onToggleCompare(agency); }}
+                        className={`p-1.5 rounded transition-colors ${
+                          isSelected 
+                            ? 'bg-slate-800 text-white' 
+                            : 'text-slate-300 hover:bg-slate-200 hover:text-slate-600'
+                        }`}
+                        title={isSelected ? "Ta bort från jämförelse" : "Lägg till i jämförelse"}
+                      >
+                        {isSelected ? <Check className="w-4 h-4" /> : <MoreHorizontal className="w-4 h-4" />}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
