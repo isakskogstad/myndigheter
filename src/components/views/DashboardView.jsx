@@ -43,6 +43,7 @@ const DashboardView = ({
   const pctWomen = currentGenderData ? Math.round((currentGenderData.w / (currentGenderData.w + currentGenderData.m)) * 100) : 0;
 
   // Prepare Chart Data
+  // Memoized to prevent unnecessary recalculations
   const chartData = React.useMemo(() => {
     let data = timeSeriesData
       .filter(d => d.year >= yearRange[0] && d.year <= (isAnimating ? animationYear : yearRange[1]))
