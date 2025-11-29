@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Area, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  ReferenceArea, ComposedChart, Legend, Label
+  ReferenceArea, ComposedChart, Legend, Label, LabelList
 } from 'recharts';
 import { Building2, Users, Play, Square, ArrowUp, ArrowDown, Minus, Download, BarChart3, LineChart, Activity } from 'lucide-react';
 import SeriesSelector, { normalizeSeriesData } from '../SeriesSelector';
@@ -14,9 +14,9 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }) => 
 );
 
 const TrendArrow = ({ current, previous, className = '' }) => {
-  if (!previous || !current) return <Minus className={`w-4 h-4 text-slate-400 ${className}`} />;
+  if (!previous || !current) return <Minus className={`w-4 h-4 text-slate-400 ${className}`} />; 
   const diff = ((current - previous) / previous) * 100;
-  if (Math.abs(diff) < 0.5) return <Minus className={`w-4 h-4 text-slate-400 ${className}`} />;
+  if (Math.abs(diff) < 0.5) return <Minus className={`w-4 h-4 text-slate-400 ${className}`} />; 
   if (diff > 0) return <div className={`flex items-center text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-bold ${className}`}><ArrowUp className="w-3 h-3 mr-1" /> {diff.toFixed(1)}%</div>;
   return <div className={`flex items-center text-red-700 bg-red-100 px-2 py-0.5 rounded-full text-xs font-bold ${className}`}><ArrowDown className="w-3 h-3 mr-1" /> {Math.abs(diff).toFixed(1)}%</div>;
 };
@@ -48,10 +48,12 @@ const DashboardView = ({
   setYearRange,
   isAnimating,
   setIsAnimating,
-  animationYear
+  animationYear,
+  // Receive setters from parent if controlled, else local state logic could apply but here we assume controlled props except for chartType which is view-specific
 }) => {
-  const [chartType, setChartType] = useState('area');
-  const [genderMode, setGenderMode] = useState('count'); // 'count' | 'share'
+  // Default to 'bar' per request
+  const [chartType, setChartType] = useState('bar');
+  const [genderMode, setGenderMode] = useState('count');
   const [perCapita, setPerCapita] = useState(false);
 
   const handleReset = () => {
@@ -60,13 +62,12 @@ const DashboardView = ({
     setPerCapita(false);
     setGenderMode('count');
     setYearRange([1978, 2025]);
-    setChartType('area');
+    setChartType('bar');
   };
 
   // Derived stats
   const currentYearData = timeSeriesData.find(d => d.year === (isAnimating ? animationYear : yearRange[1]));
   const prevYearData = timeSeriesData.find(d => d.year === (isAnimating ? animationYear : yearRange[1]) - 1);
-  const swedenData = getStatsByYear(isAnimating ? animationYear : yearRange[1]);
   
   const currentGenderData = genderHistoryData.find(d => d.year === Math.min((isAnimating ? animationYear : yearRange[1]), 2024));
   const pctWomen = currentGenderData ? Math.round((currentGenderData.w / (currentGenderData.w + currentGenderData.m)) * 100) : 0;
@@ -281,23 +282,17 @@ const DashboardView = ({
               />
               <Legend wrapperStyle={{paddingTop: '20px', fontSize: '13px', fontWeight: 500}} iconType="circle" />
               
-              {governmentPeriods
-                .filter(p => p.end > yearRange[0] && p.start < yearRange[1])
-                .map((p, i) => (
-                  <ReferenceArea
-                    key={i}
-                    x1={Math.max(p.start, yearRange[0])}
-                    x2={Math.min(p.end, isAnimating ? animationYear : yearRange[1])}
-                    fill={p.party === 'S' ? '#fee2e2' : '#e0f2fe'}
-                    fillOpacity={0.4}
-                    yAxisId="left"
-                  />
-                ))
-              }
+              {/* Render Labels only if not too dense (>30 items -> skip labels) */}
+              {chartData.length < 30 && chartType === 'bar' && (
+                 <text x="50%" y="50%" /> // Dummy render to allow LabelList logic if needed
+              )}
 
               {activeSeries.agencies && (
                 chartType === 'bar' ? (
-                  <Bar yAxisId="left" dataKey="count" name="Antal Myndigheter" fill="#475569" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="left" dataKey="count" name="Antal Myndigheter" fill="#475569" radius={[4, 4, 0, 0]}>
+                    {/* Show labels on bars if < 40 items to avoid clutter */}
+                    {chartData.length < 40 && <LabelList dataKey="count" position="top" style={{ fontSize: 10, fill: '#64748b' }} />}
+                  </Bar>
                 ) : chartType === 'line' ? (
                   <Line yAxisId="left" type="monotone" dataKey="count" name="Antal Myndigheter" stroke="#475569" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                 ) : (
@@ -305,7 +300,7 @@ const DashboardView = ({
                 )
               )}
 
-              {activeSeries.employees && <Line yAxisId="left" type="monotone" dataKey="emp" name="Antal Anställda" stroke="#84a59d" strokeWidth={3} dot={false} strokeDasharray={normalizeData ? "" : "5 5"} />}
+              {activeSeries.employees && <Line yAxisId="left" type="monotone" dataKey="emp" name="Anställda" stroke="#84a59d" strokeWidth={3} dot={false} strokeDasharray={normalizeData ? "" : "5 5"} />}
               {activeSeries.population && <Line yAxisId={normalizeData ? "left" : "right"} type="monotone" dataKey="population" name="Befolkning" stroke="#94a3b8" strokeWidth={2} dot={false} strokeDasharray="3 3" />}
               {activeSeries.gdp && <Line yAxisId={normalizeData ? "left" : "right"} type="monotone" dataKey="gdp" name="BNP" stroke="#d97706" strokeWidth={2} dot={false} />}
               {activeSeries.women && <Line yAxisId="left" type="monotone" dataKey="w" name="Kvinnor" stroke="#be185d" strokeWidth={2} dot={false} />}

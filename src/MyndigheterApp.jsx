@@ -14,6 +14,7 @@ import RegionsView from './components/views/RegionsView';
 import AgencyDetailsPanel from './components/ui/AgencyDetailsPanel';
 import CompareFloatingBar from './components/ui/CompareFloatingBar';
 import CompareModal from './components/ui/CompareModal';
+import AboutModal from './components/ui/AboutModal';
 
 // Hooks
 const useDarkMode = () => {
@@ -32,24 +33,31 @@ const useDarkMode = () => {
 };
 
 export default function MyndigheterApp() {
-  // 1. Data & State
+  // 1. Data & Global State
   const { data, loading, error, refresh } = useAgencyData();
   const agencies = data || [];
   const [isDark, setIsDark] = useDarkMode();
   
-  // URL State
+  // 2. URL State - The Source of Truth
   const [activeTab, setActiveTab] = useUrlState('view', 'overview');
   const [yearRange, setYearRange] = useUrlState('years', [1978, 2025]);
   const [searchQuery, setSearchQuery] = useUrlState('q', '');
+  
+  // Dashboard State (Persisted in URL)
+  const [activeSeries, setActiveSeries] = useUrlState('series', { agencies: true, employees: false });
+  const [normalizeData, setNormalizeData] = useUrlState('index', false);
+  const [perCapita, setPerCapita] = useUrlState('capita', false);
+  const [chartType, setChartType] = useUrlState('chart', 'area');
+  const [genderMode, setGenderMode] = useUrlState('gender', 'count');
 
-  // Local UI State
-  const [showIntro, setShowIntro] = useState(true);
+  // Registry Filter State
+  const [deptFilter, setDeptFilter] = useUrlState('dept', 'all');
+  const [statusFilter, setStatusFilter] = useUrlState('status', 'all');
+
+  // Local UI State (Transient)
+  const [showAboutModal, setShowAboutModal] = useState(false); // Renamed from showIntro
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationYear, setAnimationYear] = useState(1978);
-  const [activeSeries, setActiveSeries] = useState({ agencies: true, employees: false });
-  const [normalizeData, setNormalizeData] = useState(false);
-  
-  // Comparison State
   const [compareList, setCompareList] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState(null);
@@ -71,7 +79,7 @@ export default function MyndigheterApp() {
     return () => clearInterval(timer);
   }, [isAnimating, yearRange]);
 
-  // 2. Derived Data
+  // 3. Derived Data
   const activeAgencies = useMemo(() => agencies.filter(a => !a.e), [agencies]);
   const departments = useMemo(() => [...new Set(activeAgencies.map(a => a.d).filter(Boolean))].sort(), [activeAgencies]);
 
@@ -103,7 +111,22 @@ export default function MyndigheterApp() {
     }));
   }, [activeAgencies]);
 
-  // 3. Render
+  // Handlers
+  const handleDepartmentClick = (deptName) => {
+    setDeptFilter(deptName);
+    setActiveTab('list');
+  };
+
+  const handleDashboardReset = () => {
+    setActiveSeries({ agencies: true, employees: false });
+    setNormalizeData(false);
+    setPerCapita(false);
+    setGenderMode('count');
+    setYearRange([1978, 2025]);
+    setChartType('area');
+  };
+
+  // 4. Render
   if (loading) return <LoadingState message="Laddar myndighetsdata..." />;
   if (error) return <ErrorState error={error} onRetry={refresh} />;
 
@@ -111,12 +134,14 @@ export default function MyndigheterApp() {
     <Layout
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      showIntro={showIntro}
-      onToggleIntro={() => setShowIntro(!showIntro)}
+      showIntro={showAboutModal} // Pass to sidebar to show active state
+      onToggleIntro={() => setShowAboutModal(true)}
       isDark={isDark}
       onToggleDark={() => setIsDark(!isDark)}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
+      agencies={agencies} // Pass data for search suggestions
+      onSelectAgency={setSelectedAgency}
     >
       {/* Overlays */}
       <AgencyDetailsPanel 
@@ -130,6 +155,10 @@ export default function MyndigheterApp() {
           onClose={() => setShowCompareModal(false)}
           onRemove={(agency) => setCompareList(prev => prev.filter(a => a.n !== agency.n))}
         />
+      )}
+
+      {showAboutModal && (
+        <AboutModal onClose={() => setShowAboutModal(false)} />
       )}
 
       <CompareFloatingBar 
@@ -147,13 +176,19 @@ export default function MyndigheterApp() {
           setNormalizeData={setNormalizeData}
           yearRange={yearRange}
           setYearRange={setYearRange}
+          perCapita={perCapita}
+          setPerCapita={setPerCapita}
+          chartType={chartType}
+          setChartType={setChartType}
+          genderMode={genderMode}
+          setGenderMode={setGenderMode}
+          onReset={handleDashboardReset}
           isAnimating={isAnimating}
           setIsAnimating={(val) => {
             if(val) setAnimationYear(yearRange[0]);
             setIsAnimating(val);
           }}
           animationYear={animationYear}
-          activeAgenciesCount={activeAgencies.length}
         />
       )}
 
@@ -163,11 +198,15 @@ export default function MyndigheterApp() {
           departments={departments}
           filterText={searchQuery}
           setFilterText={setSearchQuery}
+          deptFilter={deptFilter}
+          setDeptFilter={setDeptFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
           onSelectAgency={setSelectedAgency}
           onToggleCompare={(agency) => {
             setCompareList(prev => {
               if (prev.find(a => a.n === agency.n)) return prev.filter(a => a.n !== agency.n);
-              if (prev.length >= 3) return prev; // Max 3 limit
+              if (prev.length >= 3) return prev; 
               return [...prev, agency];
             });
           }}
@@ -180,6 +219,7 @@ export default function MyndigheterApp() {
           agencies={agencies}
           departments={departments}
           departmentStats={departmentStats}
+          onDepartmentClick={handleDepartmentClick}
         />
       )}
 
