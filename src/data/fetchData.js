@@ -1,7 +1,7 @@
 // External data fetching from civictechsweden/myndighetsdata
 const BASE_URL = 'https://raw.githubusercontent.com/civictechsweden/myndighetsdata/master/data';
 
-const CACHE_KEY = 'myndigheter_data_cache';
+const CACHE_KEY = 'myndigheter_data_cache_v2';  // v2: added AGV history
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
