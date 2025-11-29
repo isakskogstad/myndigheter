@@ -13,6 +13,6 @@ beforeAll(() => {
 
 test('renders app without crashing', () => {
   render(<App />);
-  const loadingElement = screen.getByText(/Laddar myndighetsdata.../i);
+  const loadingElement = screen.getByText(/Laddar applikationen.../i);
   expect(loadingElement).toBeTruthy();
 });

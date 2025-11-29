@@ -1,7 +1,19 @@
-import React from 'react';
-import MyndigheterV6 from './MyndigheterApp';
+import React, { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
-// Error Boundary to catch runtime errors
+// Lazy load the main application
+const MyndigheterV6 = React.lazy(() => import('./MyndigheterApp'));
+
+// Loading component
+const FullScreenLoader = () => (
+  <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
+    <div className="text-center">
+      <Loader2 className="w-10 h-10 text-primary-500 animate-spin mx-auto mb-4" />
+      <p className="text-slate-500 font-medium">Laddar applikationen...</p>
+    </div>
+  </div>
+);
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -20,41 +32,12 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          padding: '40px',
-          maxWidth: '600px',
-          margin: '0 auto',
-          fontFamily: 'system-ui, sans-serif'
-        }}>
-          <h1 style={{ color: '#dc2626' }}>Något gick fel</h1>
-          <p>Ett fel uppstod vid laddning av applikationen.</p>
-          <details style={{
-            marginTop: '20px',
-            padding: '10px',
-            background: '#f5f5f5',
-            borderRadius: '8px'
-          }}>
-            <summary style={{ cursor: 'pointer' }}>Teknisk information</summary>
-            <pre style={{
-              fontSize: '12px',
-              overflow: 'auto',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {this.state.error && this.state.error.toString()}
-              {this.state.errorInfo && this.state.errorInfo.componentStack}
-            </pre>
-          </details>
+        <div className="p-10 max-w-2xl mx-auto font-sans">
+          <h1 className="text-red-600 text-2xl font-bold mb-4">Något gick fel</h1>
+          <p className="mb-4 text-slate-700">Ett fel uppstod vid laddning av applikationen.</p>
           <button
             onClick={() => window.location.reload()}
-            style={{
-              marginTop: '20px',
-              padding: '10px 20px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Ladda om sidan
           </button>
@@ -69,7 +52,9 @@ class ErrorBoundary extends React.Component {
 function App() {
   return (
     <ErrorBoundary>
-      <MyndigheterV6 />
+      <Suspense fallback={<FullScreenLoader />}>
+        <MyndigheterV6 />
+      </Suspense>
     </ErrorBoundary>
   );
 }

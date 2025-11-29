@@ -6,7 +6,6 @@
 
 @layer base {
   body {
-    /* Pure white background for crisper look */
     @apply bg-white text-slate-800 antialiased selection:bg-primary-100 selection:text-primary-900;
   }
   
@@ -25,5 +24,63 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(to right, #f5f5f4 4%, #e7e5e4 25%, #f5f5f4 36%);
+    background-size: 1000px 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.recharts-tooltip-wrapper {
+  z-index: 50;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  /* Hide navigation and controls */
+  aside, header, button, .no-print, input[type="range"] {
+    display: none !important;
+  }
+
+  /* Ensure charts and content expand */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .max-w-7xl {
+    max-width: 100% !important;
+  }
+
+  /* Better typography for print */
+  h1, h2, h3 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  /* Avoid breaking charts */
+  .recharts-wrapper {
+    page-break-inside: avoid;
   }
 }
