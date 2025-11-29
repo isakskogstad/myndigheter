@@ -5,10 +5,26 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-white text-slate-800 antialiased selection:bg-primary-100 selection:text-primary-900;
+  html {
+    /* Increase base size slightly for better readability */
+    font-size: 16px; 
   }
   
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-sky-100 selection:text-sky-900;
+    /* Use slightly looser line height for readability */
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-slate-900;
+  }
+
+  h1 { @apply text-3xl md:text-4xl font-semibold tracking-tight; }
+  h2 { @apply text-2xl md:text-3xl font-semibold tracking-tight; }
+  h3 { @apply text-xl md:text-2xl font-medium; }
+  
+  /* Old style figures for data numbers */
   .old-style-nums {
     font-variant-numeric: oldstyle-nums;
   }
@@ -23,20 +39,12 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
   }
   
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
-    background: linear-gradient(to right, #f5f5f4 4%, #e7e5e4 25%, #f5f5f4 36%);
+    background: linear-gradient(to right, #f1f5f9 4%, #e2e8f0 25%, #f1f5f9 36%);
     background-size: 1000px 100%;
   }
 }
@@ -56,31 +64,15 @@
     background: white;
     color: black;
   }
-  
-  /* Hide navigation and controls */
   aside, header, button, .no-print, input[type="range"] {
     display: none !important;
   }
-
-  /* Ensure charts and content expand */
   main {
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
   }
-
   .max-w-7xl {
     max-width: 100% !important;
-  }
-
-  /* Better typography for print */
-  h1, h2, h3 {
-    color: black !important;
-    page-break-after: avoid;
-  }
-
-  /* Avoid breaking charts */
-  .recharts-wrapper {
-    page-break-inside: avoid;
   }
 }

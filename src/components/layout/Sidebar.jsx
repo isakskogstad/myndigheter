@@ -4,7 +4,6 @@ import {
   Building2, 
   MapPin, 
   Table2, 
-  ArrowLeftRight,
   Info,
   Moon,
   Github,
@@ -42,7 +41,6 @@ const Sidebar = ({
     { id: 'departments', label: 'Departement', icon: Building2 },
     { id: 'regions', label: 'Regioner', icon: MapPin },
     { id: 'list', label: 'Register', icon: Table2 },
-    { id: 'compare', label: 'Jämförelse', icon: ArrowLeftRight },
   ];
 
   return (

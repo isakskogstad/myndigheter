@@ -9,8 +9,11 @@ import DashboardView from './components/views/DashboardView';
 import RegistryView from './components/views/RegistryView';
 import DepartmentsView from './components/views/DepartmentsView';
 import RegionsView from './components/views/RegionsView';
-import CompareView from './components/views/CompareView';
+
+// UI Components
 import AgencyDetailsPanel from './components/ui/AgencyDetailsPanel';
+import CompareFloatingBar from './components/ui/CompareFloatingBar';
+import CompareModal from './components/ui/CompareModal';
 
 // Hooks
 const useDarkMode = () => {
@@ -45,7 +48,10 @@ export default function MyndigheterApp() {
   const [animationYear, setAnimationYear] = useState(1978);
   const [activeSeries, setActiveSeries] = useState({ agencies: true, employees: false });
   const [normalizeData, setNormalizeData] = useState(false);
+  
+  // Comparison State
   const [compareList, setCompareList] = useState([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState(null);
 
   // Animation Loop
@@ -112,12 +118,27 @@ export default function MyndigheterApp() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >
-      {/* Agency Details Panel (Slide-over) */}
+      {/* Overlays */}
       <AgencyDetailsPanel 
         agency={selectedAgency} 
         onClose={() => setSelectedAgency(null)} 
       />
+      
+      {showCompareModal && (
+        <CompareModal 
+          compareList={compareList} 
+          onClose={() => setShowCompareModal(false)}
+          onRemove={(agency) => setCompareList(prev => prev.filter(a => a.n !== agency.n))}
+        />
+      )}
 
+      <CompareFloatingBar 
+        compareList={compareList}
+        onClear={() => setCompareList([])}
+        onOpenCompare={() => setShowCompareModal(true)}
+      />
+
+      {/* Views */}
       {activeTab === 'overview' && (
         <DashboardView 
           activeSeries={activeSeries}
@@ -146,7 +167,7 @@ export default function MyndigheterApp() {
           onToggleCompare={(agency) => {
             setCompareList(prev => {
               if (prev.find(a => a.n === agency.n)) return prev.filter(a => a.n !== agency.n);
-              if (prev.length >= 3) return prev;
+              if (prev.length >= 3) return prev; // Max 3 limit
               return [...prev, agency];
             });
           }}
@@ -166,14 +187,6 @@ export default function MyndigheterApp() {
         <RegionsView 
           regionStats={regionStats}
           agencies={agencies}
-        />
-      )}
-
-      {activeTab === 'compare' && (
-        <CompareView 
-          compareList={compareList}
-          removeFromCompare={(agency) => setCompareList(prev => prev.filter(a => a.n !== agency.n))}
-          onAddMore={() => setActiveTab('list')}
         />
       )}
     </Layout>
