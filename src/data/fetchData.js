@@ -92,18 +92,18 @@ export async function fetchAllAgencyData() {
  * org=orgNr, tel=phone, web=website, grp=group, city=city, host=host, sfs=SFS ref
  */
 export function transformAgencyData(rawData) {
-  const { scb, stkt, sfs, agv, esv, wd } = rawData;
+  const { scb, stkt, sfs, agv, wd } = rawData;
 
-  // Create a merged dataset using stkt as base (has most structured data)
+  // Use wd (Wikidata) as base - it has ALL agencies including dissolved ones (~700+)
+  // stkt only has active agencies (~350)
   const agencies = [];
 
-  Object.entries(stkt).forEach(([name, data]) => {
+  Object.entries(wd).forEach(([name, wdData]) => {
     // Get additional data from other sources
+    const stktData = stkt[name] || {};
     const scbData = scb[name] || {};
     const sfsData = sfs[name] || {};
     const agvData = agv[name] || {};
-    const esvData = esv[name] || {};
-    const wdData = wd[name] || {};
 
     // Extract city from office address
     const officeAddr = agvData.office_address || '';
@@ -118,25 +118,25 @@ export function transformAgencyData(rawData) {
     // Build compact agency object matching MyndigheterApp.jsx format
     const agency = {
       n: name,  // name
-      d: data.department || undefined,  // department
-      s: wdData.start || data.start,  // start date
-      e: wdData.end || data.end,  // end date (for dissolved agencies)
+      d: stktData.department || undefined,  // department (from stkt)
+      s: wdData.start || stktData.start,  // start date
+      e: wdData.end || stktData.end,  // end date (for dissolved agencies)
       en: wdData.name_en,  // english name
-      sh: data.abbreviation,  // short name / abbreviation
+      sh: stktData.abbreviation,  // short name / abbreviation
       emp: latestEmp.total,  // total employees
-      fte: data.fte?.[latestYear],  // FTE for latest year
+      fte: stktData.fte?.[latestYear],  // FTE for latest year
       w: latestEmp.women,  // women count
       m: latestEmp.men,  // men count
-      str: data.structure,  // structure type
-      cof: data.cofog10,  // COFOG code
-      gd: data.has_gd,  // has generaldirektör
-      fteH: data.fte || {},  // FTE history
-      org: data.org_nr,  // organization number
+      str: stktData.structure,  // structure type
+      cof: stktData.cofog10,  // COFOG code
+      gd: stktData.has_gd,  // has generaldirektör
+      fteH: stktData.fte || {},  // FTE history
+      org: stktData.org_nr,  // organization number
       tel: agvData.phone,  // telephone
       web: agvData.website,  // website
       grp: agvData.group,  // group
       city: city,  // city
-      host: data.host_authority,  // host authority
+      host: stktData.host_authority,  // host authority
       sfs: sfsData.created_by,  // SFS reference
     };
 
