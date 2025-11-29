@@ -1,13 +1,14 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Building2, 
-  MapPin, 
-  Table2, 
+import {
+  LayoutDashboard,
+  Building2,
+  MapPin,
+  Table2,
   Info,
   Moon,
   Github,
-  X
+  X,
+  PieChart
 } from 'lucide-react';
 
 const NavItem = ({ id, label, icon: Icon, active, onClick }) => (
@@ -26,23 +27,23 @@ const NavItem = ({ id, label, icon: Icon, active, onClick }) => (
   </a>
 );
 
-const Sidebar = ({ 
-  activeTab, 
-  onTabChange, 
-  showIntro, 
-  onToggleIntro, 
-  isDark, 
+const Sidebar = ({
+  activeTab,
+  onTabChange,
+  showIntro,
+  onToggleIntro,
+  isDark,
   onToggleDark,
   isOpen,
   onClose
 }) => {
   const navItems = [
     { id: 'overview', label: 'Översikt', icon: LayoutDashboard },
+    { id: 'analysis', label: 'Analys', icon: PieChart },
     { id: 'departments', label: 'Departement', icon: Building2 },
     { id: 'regions', label: 'Regioner', icon: MapPin },
     { id: 'list', label: 'Register', icon: Table2 },
   ];
-
   return (
     <aside 
       className={`

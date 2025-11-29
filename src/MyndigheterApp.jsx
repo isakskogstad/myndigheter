@@ -1,20 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { useAgencyData, useUrlState } from './hooks/useAgencyData';
 import { LoadingState, ErrorState } from './components/ui/LoadingState';
 import { regionColors } from './data/constants';
-
-// Layout & Views
 import Layout from './components/layout/Layout';
-import DashboardView from './components/views/DashboardView';
-import RegistryView from './components/views/RegistryView';
-import DepartmentsView from './components/views/DepartmentsView';
-import RegionsView from './components/views/RegionsView';
 
 // UI Components
 import AgencyDetailsPanel from './components/ui/AgencyDetailsPanel';
 import CompareFloatingBar from './components/ui/CompareFloatingBar';
 import CompareModal from './components/ui/CompareModal';
 import AboutModal from './components/ui/AboutModal';
+
+// Lazy load Views
+const DashboardView = React.lazy(() => import('./components/views/DashboardView'));
+const RegistryView = React.lazy(() => import('./components/views/RegistryView'));
+const DepartmentsView = React.lazy(() => import('./components/views/DepartmentsView'));
+const RegionsView = React.lazy(() => import('./components/views/RegionsView'));
+const AnalysisView = React.lazy(() => import('./components/views/AnalysisView'));
 
 // Hooks
 const useDarkMode = () => {
@@ -32,37 +33,37 @@ const useDarkMode = () => {
   return [isDark, setIsDark];
 };
 
+const ViewLoader = () => (
+  <div className="h-96 w-full flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-primary-500 rounded-full animate-spin"></div>
+  </div>
+);
+
 export default function MyndigheterApp() {
-  // 1. Data & Global State
   const { data, loading, error, refresh } = useAgencyData();
   const agencies = data || [];
   const [isDark, setIsDark] = useDarkMode();
   
-  // 2. URL State - The Source of Truth
   const [activeTab, setActiveTab] = useUrlState('view', 'overview');
   const [yearRange, setYearRange] = useUrlState('years', [1978, 2025]);
   const [searchQuery, setSearchQuery] = useUrlState('q', '');
   
-  // Dashboard State (Persisted in URL)
   const [activeSeries, setActiveSeries] = useUrlState('series', { agencies: true, employees: false });
   const [normalizeData, setNormalizeData] = useUrlState('index', false);
   const [perCapita, setPerCapita] = useUrlState('capita', false);
   const [chartType, setChartType] = useUrlState('chart', 'area');
   const [genderMode, setGenderMode] = useUrlState('gender', 'count');
 
-  // Registry Filter State
   const [deptFilter, setDeptFilter] = useUrlState('dept', 'all');
   const [statusFilter, setStatusFilter] = useUrlState('status', 'all');
 
-  // Local UI State (Transient)
-  const [showAboutModal, setShowAboutModal] = useState(false); // Renamed from showIntro
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationYear, setAnimationYear] = useState(1978);
   const [compareList, setCompareList] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState(null);
 
-  // Animation Loop
   React.useEffect(() => {
     let timer;
     if (isAnimating) {
@@ -79,11 +80,9 @@ export default function MyndigheterApp() {
     return () => clearInterval(timer);
   }, [isAnimating, yearRange]);
 
-  // 3. Derived Data
   const activeAgencies = useMemo(() => agencies.filter(a => !a.e), [agencies]);
   const departments = useMemo(() => [...new Set(activeAgencies.map(a => a.d).filter(Boolean))].sort(), [activeAgencies]);
 
-  // Stats Calculations
   const departmentStats = useMemo(() => {
     const stats = {};
     activeAgencies.forEach(a => {
@@ -111,7 +110,6 @@ export default function MyndigheterApp() {
     }));
   }, [activeAgencies]);
 
-  // Handlers
   const handleDepartmentClick = (deptName) => {
     setDeptFilter(deptName);
     setActiveTab('list');
@@ -126,7 +124,6 @@ export default function MyndigheterApp() {
     setChartType('area');
   };
 
-  // 4. Render
   if (loading) return <LoadingState message="Laddar myndighetsdata..." />;
   if (error) return <ErrorState error={error} onRetry={refresh} />;
 
@@ -134,16 +131,15 @@ export default function MyndigheterApp() {
     <Layout
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      showIntro={showAboutModal} // Pass to sidebar to show active state
+      showIntro={showAboutModal}
       onToggleIntro={() => setShowAboutModal(true)}
       isDark={isDark}
       onToggleDark={() => setIsDark(!isDark)}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
-      agencies={agencies} // Pass data for search suggestions
+      agencies={agencies}
       onSelectAgency={setSelectedAgency}
     >
-      {/* Overlays */}
       <AgencyDetailsPanel 
         agency={selectedAgency} 
         onClose={() => setSelectedAgency(null)} 
@@ -167,68 +163,76 @@ export default function MyndigheterApp() {
         onOpenCompare={() => setShowCompareModal(true)}
       />
 
-      {/* Views */}
-      {activeTab === 'overview' && (
-        <DashboardView 
-          activeSeries={activeSeries}
-          setActiveSeries={setActiveSeries}
-          normalizeData={normalizeData}
-          setNormalizeData={setNormalizeData}
-          yearRange={yearRange}
-          setYearRange={setYearRange}
-          perCapita={perCapita}
-          setPerCapita={setPerCapita}
-          chartType={chartType}
-          setChartType={setChartType}
-          genderMode={genderMode}
-          setGenderMode={setGenderMode}
-          onReset={handleDashboardReset}
-          isAnimating={isAnimating}
-          setIsAnimating={(val) => {
-            if(val) setAnimationYear(yearRange[0]);
-            setIsAnimating(val);
-          }}
-          animationYear={animationYear}
-        />
-      )}
+      <Suspense fallback={<ViewLoader />}>
+        {activeTab === 'overview' && (
+          <DashboardView 
+            activeSeries={activeSeries}
+            setActiveSeries={setActiveSeries}
+            normalizeData={normalizeData}
+            setNormalizeData={setNormalizeData}
+            yearRange={yearRange}
+            setYearRange={setYearRange}
+            perCapita={perCapita}
+            setPerCapita={setPerCapita}
+            chartType={chartType}
+            setChartType={setChartType}
+            genderMode={genderMode}
+            setGenderMode={setGenderMode}
+            onReset={handleDashboardReset}
+            isAnimating={isAnimating}
+            setIsAnimating={(val) => {
+              if(val) setAnimationYear(yearRange[0]);
+              setIsAnimating(val);
+            }}
+            animationYear={animationYear}
+          />
+        )}
 
-      {activeTab === 'list' && (
-        <RegistryView 
-          agencies={agencies}
-          departments={departments}
-          filterText={searchQuery}
-          setFilterText={setSearchQuery}
-          deptFilter={deptFilter}
-          setDeptFilter={setDeptFilter}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          onSelectAgency={setSelectedAgency}
-          onToggleCompare={(agency) => {
-            setCompareList(prev => {
-              if (prev.find(a => a.n === agency.n)) return prev.filter(a => a.n !== agency.n);
-              if (prev.length >= 3) return prev; 
-              return [...prev, agency];
-            });
-          }}
-          compareList={compareList}
-        />
-      )}
+        {activeTab === 'analysis' && (
+          <AnalysisView 
+            agencies={agencies} 
+            onSelectAgency={setSelectedAgency} 
+          />
+        )}
 
-      {activeTab === 'departments' && (
-        <DepartmentsView 
-          agencies={agencies}
-          departments={departments}
-          departmentStats={departmentStats}
-          onDepartmentClick={handleDepartmentClick}
-        />
-      )}
+        {activeTab === 'list' && (
+          <RegistryView 
+            agencies={agencies}
+            departments={departments}
+            filterText={searchQuery}
+            setFilterText={setSearchQuery}
+            deptFilter={deptFilter}
+            setDeptFilter={setDeptFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            onSelectAgency={setSelectedAgency}
+            onToggleCompare={(agency) => {
+              setCompareList(prev => {
+                if (prev.find(a => a.n === agency.n)) return prev.filter(a => a.n !== agency.n);
+                if (prev.length >= 3) return prev; 
+                return [...prev, agency];
+              });
+            }}
+            compareList={compareList}
+          />
+        )}
 
-      {activeTab === 'regions' && (
-        <RegionsView 
-          regionStats={regionStats}
-          agencies={agencies}
-        />
-      )}
+        {activeTab === 'departments' && (
+          <DepartmentsView 
+            agencies={agencies}
+            departments={departments}
+            departmentStats={departmentStats}
+            onDepartmentClick={handleDepartmentClick}
+          />
+        )}
+
+        {activeTab === 'regions' && (
+          <RegionsView 
+            regionStats={regionStats}
+            agencies={agencies}
+          />
+        )}
+      </Suspense>
     </Layout>
   );
 }
