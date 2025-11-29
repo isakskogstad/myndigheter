@@ -91,7 +91,14 @@ export async function fetchAllAgencyData() {
  * empH=employee history (total), wH=women history, mH=men history (from AGV, 1980+)
  */
 export function transformAgencyData(rawData) {
-  const { merged, wd } = rawData;
+  // Defensive: ensure rawData has required properties
+  if (!rawData || typeof rawData !== 'object') {
+    console.error('transformAgencyData: Invalid rawData', rawData);
+    return [];
+  }
+
+  const merged = rawData.merged || {};
+  const wd = rawData.wd || {};
 
   // merged.json has 978 agencies with nested source data (esv, stkt, scb, sfs, agv)
   // wd.json has start/end dates from Wikidata
@@ -99,6 +106,8 @@ export function transformAgencyData(rawData) {
   const agencyMap = new Map();
 
   Object.entries(merged).forEach(([name, sources]) => {
+    // Skip if sources is not an object
+    if (!sources || typeof sources !== 'object') return;
     // Normalize name for deduplication (lowercase for comparison)
     const normalizedKey = name.toLowerCase().trim();
     // Extract data from each source within merged.json
@@ -112,19 +121,21 @@ export function transformAgencyData(rawData) {
     const wdData = wd[name] || {};
 
     // Get latest employee/FTE data from ESV (most complete for recent years)
-    const esvEmployees = esv.employees || {};
-    const esvFte = esv.fte || {};
-    const latestEsvYear = Object.keys(esvEmployees).sort().pop();
+    const esvEmployees = (esv && esv.employees) ? esv.employees : {};
+    const esvFte = (esv && esv.fte) ? esv.fte : {};
+    const esvYears = Object.keys(esvEmployees);
+    const latestEsvYear = esvYears.length > 0 ? esvYears.sort().pop() : null;
     const latestEsvEmp = latestEsvYear ? esvEmployees[latestEsvYear] : undefined;
     const latestFte = latestEsvYear ? esvFte[latestEsvYear] : undefined;
 
     // Get AGV employee history (goes back to 1980 for many agencies)
-    const agvTotal = agv.total || {};
-    const agvWomen = agv.women || {};
-    const agvMen = agv.men || {};
+    const agvTotal = (agv && agv.total) ? agv.total : {};
+    const agvWomen = (agv && agv.women) ? agv.women : {};
+    const agvMen = (agv && agv.men) ? agv.men : {};
 
     // Get latest employee count (prefer ESV if available, otherwise AGV)
-    const latestAgvYear = Object.keys(agvTotal).sort().pop();
+    const agvYears = Object.keys(agvTotal);
+    const latestAgvYear = agvYears.length > 0 ? agvYears.sort().pop() : null;
     const latestAgvEmp = latestAgvYear ? agvTotal[latestAgvYear] : undefined;
     const latestEmp = latestEsvEmp || latestAgvEmp;
 
