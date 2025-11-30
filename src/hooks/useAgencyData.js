@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchAllAgencyData, transformAgencyData, clearCache, getCacheInfo } from '../data/fetchData';
+import { fetchAllAgencyData, fetchAllAgencyDataWithProgress, transformAgencyData, clearCache, getCacheInfo } from '../data/fetchData';
 
 /**
  * Custom hook for fetching and managing agency data
@@ -51,6 +51,79 @@ export function useAgencyData() {
     rawData,
     loading,
     error,
+    refresh,
+    cacheInfo,
+  };
+}
+
+/**
+ * Custom hook for fetching agency data with progress reporting
+ * Used for the splash screen loading animation
+ */
+export function useAgencyDataWithProgress() {
+  const [data, setData] = useState(null);
+  const [rawData, setRawData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState('Initierar...');
+  const [cacheInfo, setCacheInfo] = useState(getCacheInfo());
+
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    setStatus('Initierar...');
+
+    try {
+      if (forceRefresh) {
+        clearCache();
+      }
+
+      const raw = await fetchAllAgencyDataWithProgress((prog, stat) => {
+        setProgress(prog);
+        setStatus(stat);
+      });
+      setRawData(raw);
+
+      setProgress(95);
+      setStatus('Förbereder visualiseringar...');
+
+      // Small delay to show the "preparing" step
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const transformed = transformAgencyData(raw);
+      setData(transformed);
+
+      setProgress(100);
+      setStatus('Klart!');
+      setCacheInfo(getCacheInfo());
+    } catch (err) {
+      console.error('Failed to fetch agency data:', err);
+      setError(err.message || 'Kunde inte hämta data');
+      setStatus('Ett fel uppstod');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Refresh function for manual refresh
+  const refresh = useCallback(() => {
+    return fetchData(true);
+  }, [fetchData]);
+
+  return {
+    data,
+    rawData,
+    loading,
+    error,
+    progress,
+    status,
     refresh,
     cacheInfo,
   };

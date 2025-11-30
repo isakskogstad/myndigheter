@@ -83,6 +83,44 @@ export async function fetchAllAgencyData() {
 }
 
 /**
+ * Fetch all agency data with progress reporting
+ * @param {function} onProgress - Callback with (progress, status) updates
+ * @returns {Promise<Object>} - Raw agency data
+ */
+export async function fetchAllAgencyDataWithProgress(onProgress = () => {}) {
+  // Check cache first
+  const cached = getCachedData();
+  if (cached) {
+    console.log('Using cached agency data');
+    onProgress(100, 'Laddar från cache...');
+    return cached;
+  }
+
+  console.log('Fetching fresh agency data from GitHub...');
+
+  // Step 1: Fetch merged.json (main data source)
+  onProgress(5, 'Hämtar data från Civic Tech Sweden...');
+  const merged = await fetchJSON('merged.json');
+  onProgress(40, 'Myndighetsdata hämtad');
+
+  // Step 2: Fetch wikidata
+  onProgress(45, 'Hämtar data från Wikidata...');
+  const wd = await fetchJSON('wd.json');
+  onProgress(70, 'Wikidata hämtad');
+
+  // Step 3: Combine data
+  onProgress(75, 'Bearbetar myndighetsdata...');
+  const data = { merged, wd };
+
+  // Step 4: Cache the data
+  onProgress(90, 'Sparar i cache...');
+  setCachedData(data);
+
+  onProgress(100, 'Klart!');
+  return data;
+}
+
+/**
  * Merge and transform raw data into app-ready compact format
  * Uses short property names:
  *

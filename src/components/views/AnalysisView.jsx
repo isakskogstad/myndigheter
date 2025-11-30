@@ -3,8 +3,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   ScatterChart, Scatter, ZAxis
 } from 'recharts';
-import { Briefcase, Calendar, ArrowRight, Zap, Scale, Info, PieChart } from 'lucide-react';
+import { Briefcase, Calendar, ArrowRight, Zap, Scale, Info, PieChart, Clock } from 'lucide-react';
 import ds from '../../styles/designSystem';
+import HorizontalTimeline from '../ui/HorizontalTimeline';
 
 // Info tooltip component
 const InfoTooltip = ({ text }) => (
@@ -370,6 +371,21 @@ const AnalysisView = ({ agencies, onSelectAgency }) => {
         {/* Abstract Decor */}
         <div className={ds.cn('absolute right-0 top-0 w-96 h-96 blur-3xl transform translate-x-1/2 -translate-y-1/2', ds.radius.full)} style={{ backgroundColor: `${ds.colors.primary[500]}33` }}></div>
         <div className={ds.cn('absolute bottom-0 left-1/4 w-64 h-64 bg-pink-500/20 blur-3xl transform translate-y-1/2', ds.radius.full)}></div>
+      </div>
+
+      {/* Horizontal Timeline - Full Width */}
+      <div className={ds.cn('bg-white', ds.cardPadding.lg, ds.radius.lg, 'border', ds.shadows.card)} style={{ borderColor: ds.colors.slate[200] }}>
+        <div className={ds.cn('flex items-center mb-4', ds.spacing.sm)}>
+          <Clock className={ds.cn(ds.iconSizes.md)} style={{ color: ds.colors.primary[500] }} />
+          <h3 className={ds.cn('font-serif text-slate-900', ds.typography.sizes.xl, ds.typography.weights.bold)}>
+            Tidslinje
+          </h3>
+          <InfoTooltip text="Interaktiv tidslinje som visar när myndigheter bildades. Scrolla horisontellt eller filtrera på årtionde. Klicka på en punkt för detaljer." />
+        </div>
+        <p className={ds.cn('text-slate-500 mb-6', ds.typography.sizes.sm)}>
+          Se när svenska myndigheter har bildats genom historien. Varje punkt är en myndighet.
+        </p>
+        <HorizontalTimeline agencies={agencies} onSelect={onSelectAgency} />
       </div>
 
       {/* Main Grid */}

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, Suspense, useCallback } from 'react';
-import { useAgencyData, useUrlState } from './hooks/useAgencyData';
-import { LoadingState, ErrorState } from './components/ui/LoadingState';
+import { useUrlState } from './hooks/useAgencyData';
 import { regionColors } from './data/constants';
 import Layout from './components/layout/Layout';
 
@@ -10,6 +9,8 @@ import CompareFloatingBar from './components/ui/CompareFloatingBar';
 import CompareModal from './components/ui/CompareModal';
 import AboutModal from './components/ui/AboutModal';
 import CommandPalette from './components/ui/CommandPalette';
+import OnboardingTour, { useOnboardingTour } from './components/ui/OnboardingTour';
+import ExportModal from './components/ui/ExportModal';
 
 // Lazy load Views
 const DashboardView = React.lazy(() => import('./components/views/DashboardView'));
@@ -41,10 +42,11 @@ const ViewLoader = () => (
   </div>
 );
 
-export default function MyndigheterApp() {
-  const { data, loading, error, refresh } = useAgencyData();
-  const agencies = data || [];
+export default function MyndigheterApp({ initialData, initialRawData, onRefresh, cacheInfo }) {
+  // Use data passed from App.jsx (loaded with splash screen progress)
+  const agencies = initialData || [];
   const [isDark, setIsDark] = useDarkMode();
+  const { showTour, closeTour, resetTour } = useOnboardingTour();
 
   const [activeTab, setActiveTab] = useUrlState('view', 'overview');
   const [yearRange, setYearRange] = useUrlState('years', [1978, 2025]);
@@ -74,6 +76,7 @@ export default function MyndigheterApp() {
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [selectedAgenciesForChart, setSelectedAgenciesForChart] = useState([]);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Command Palette keyboard shortcut (⌘K / Ctrl+K)
   React.useEffect(() => {
@@ -96,31 +99,10 @@ export default function MyndigheterApp() {
     }
   }, [agencies, setActiveTab]);
 
-  // Export data as CSV
-  const handleExportCSV = useCallback(() => {
-    const headers = ['Namn', 'Kortnamn', 'Departement', 'Ort', 'Anställda', 'Kvinnor', 'Män', 'Status'];
-    const csvContent = [
-      headers.join(';'),
-      ...agencies.map(a => [
-        a.n || a.name,
-        a.sh || '',
-        a.d || a.department || '',
-        a.city || '',
-        a.emp || '',
-        a.w || '',
-        a.m || '',
-        a.e ? 'Avvecklad' : 'Aktiv'
-      ].join(';'))
-    ].join('\n');
-
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `svenska-myndigheter-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [agencies]);
+  // Open Export Modal
+  const handleOpenExportModal = useCallback(() => {
+    setShowExportModal(true);
+  }, []);
 
   // Clear all filters
   const handleClearFilters = useCallback(() => {
@@ -196,8 +178,7 @@ export default function MyndigheterApp() {
     });
   };
 
-  if (loading) return <LoadingState message="Laddar myndighetsdata..." />;
-  if (error) return <ErrorState error={error} onRetry={refresh} />;
+  // Loading and error states are now handled in App.jsx with splash screen
 
   return (
     <Layout
@@ -219,7 +200,7 @@ export default function MyndigheterApp() {
         onClose={() => setIsCommandPaletteOpen(false)}
         onNavigate={handleCommandPaletteNavigate}
         onToggleTheme={() => setIsDark(!isDark)}
-        onExport={handleExportCSV}
+        onExport={handleOpenExportModal}
         onClearFilters={handleClearFilters}
         agencies={agencies.map(a => ({
           name: a.n || a.name,
@@ -246,6 +227,25 @@ export default function MyndigheterApp() {
       {showAboutModal && (
         <AboutModal onClose={() => setShowAboutModal(false)} />
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        agencies={agencies}
+        filters={{
+          searchQuery,
+          deptFilter,
+          statusFilter
+        }}
+      />
+
+      {/* Onboarding Tour for first-time visitors */}
+      <OnboardingTour
+        isOpen={showTour}
+        onClose={closeTour}
+        onNavigate={(viewId) => setActiveTab(viewId)}
+      />
 
       <CompareFloatingBar
         compareList={compareList}

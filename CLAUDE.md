@@ -33,6 +33,11 @@ src/
 └── styles/
     └── designSystem.js   # Design tokens
 
+backups/                  # MANDATORY backup folder
+├── session-start/        # Backups at session start
+├── session-end/          # Backups at session end
+└── changes/              # Backups before file changes
+
 .github/
 └── workflows/
     ├── deploy.yml              # Auto-deploy to GitHub Pages

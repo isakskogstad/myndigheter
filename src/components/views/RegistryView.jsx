@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { MoreHorizontal, Check, ArrowUpDown, FilterX, FolderSearch, Building2, Archive, Download } from 'lucide-react';
+import { MoreHorizontal, Check, ArrowUpDown, FilterX, FolderSearch, Building2, Archive, Download, LayoutGrid, Table } from 'lucide-react';
 import { deptColors } from '../../data/constants';
 import ds from '../../styles/designSystem';
+import Sparkline from '../ui/Sparkline';
+import { MobileAgencyCardList } from '../ui/MobileAgencyCard';
+import FilterChips from '../ui/FilterChips';
 
 const getShortDeptName = (dept) => {
   if (!dept) return '';
   return dept.replace('departementet', '').trim();
 };
 
-const RegistryView = ({ 
-  agencies, 
+const RegistryView = ({
+  agencies,
   departments,
-  filterText, 
+  filterText,
   setFilterText,
   deptFilter,
   setDeptFilter,
@@ -23,6 +26,7 @@ const RegistryView = ({
 }) => {
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
 
   const handleExportCSV = () => {
     const headers = ['Namn', 'Kortnamn', 'Departement', 'Anställda', 'FTE', 'Org.nr', 'Bildad', 'Status'];
@@ -186,6 +190,34 @@ const RegistryView = ({
               </button>
             )}
 
+            {/* View Mode Toggle */}
+            <div className={ds.cn('flex p-1', ds.radius.md)} style={{ backgroundColor: ds.colors.slate[100] }}>
+              <button
+                onClick={() => setViewMode('table')}
+                className={ds.cn(
+                  'p-2',
+                  ds.radius.sm,
+                  ds.animations.normal,
+                  viewMode === 'table' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700'
+                )}
+                title="Tabellvy"
+              >
+                <Table className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={ds.cn(
+                  'p-2',
+                  ds.radius.sm,
+                  ds.animations.normal,
+                  viewMode === 'cards' ? ds.cn('bg-white text-slate-900', ds.shadows.subtle) : 'text-slate-500 hover:text-slate-700'
+                )}
+                title="Kortvy"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+
             <button
               onClick={handleExportCSV}
               className={ds.cn(
@@ -209,6 +241,21 @@ const RegistryView = ({
           </span>
         </div>
       </div>
+
+      {/* Filter Chips */}
+      <FilterChips
+        searchQuery={filterText}
+        deptFilter={deptFilter}
+        statusFilter={statusFilter}
+        onClearSearch={() => setFilterText('')}
+        onClearDept={() => setDeptFilter('all')}
+        onClearStatus={() => setStatusFilter('active')}
+        onClearAll={() => {
+          setFilterText('');
+          setDeptFilter('all');
+          setStatusFilter('active');
+        }}
+      />
 
       {/* Empty State */}
       {filteredAgencies.length === 0 ? (
@@ -242,8 +289,17 @@ const RegistryView = ({
             )}
           </div>
         </div>
+      ) : viewMode === 'cards' ? (
+        /* Mobile/Card View */
+        <MobileAgencyCardList
+          agencies={filteredAgencies}
+          onSelectAgency={onSelectAgency}
+          onToggleCompare={onToggleCompare}
+          compareList={compareList}
+          displayLimit={20}
+        />
       ) : (
-        /* Table */
+        /* Table View */
         <div className={ds.cn('bg-white border overflow-hidden', ds.radius.lg, ds.shadows.card)} style={{ borderColor: ds.colors.slate[200] }}>
           <div className="overflow-x-auto max-h-[70vh]">
             <table className="w-full text-left border-collapse">
@@ -263,6 +319,9 @@ const RegistryView = ({
                   </th>
                   <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest font-sans border-b border-slate-200 text-right cursor-pointer hover:bg-slate-100 transition-colors group" onClick={() => handleSort('employees')}>
                     <div className="flex items-center justify-end gap-1"><ArrowUpDown className={`w-3 h-3 text-slate-300 group-hover:text-primary-500 ${sortKey === 'employees' ? 'text-primary-600' : ''}`} /> Anställda</div>
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest font-sans border-b border-slate-200 text-center hidden lg:table-cell">
+                    <span title="Anställningstrend de senaste åren">Trend</span>
                   </th>
                   <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest font-sans border-b border-slate-200 text-right hidden sm:table-cell cursor-pointer hover:bg-slate-100 transition-colors group" onClick={() => handleSort('formed')}>
                     <div className="flex items-center justify-end gap-1"><ArrowUpDown className={`w-3 h-3 text-slate-300 group-hover:text-primary-500 ${sortKey === 'formed' ? 'text-primary-600' : ''}`} /> År</div>
@@ -319,6 +378,14 @@ const RegistryView = ({
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 font-mono text-right old-style-nums font-medium">
                         {agency.emp ? agency.emp.toLocaleString('sv-SE') : <span className="text-slate-300">–</span>}
+                      </td>
+                      <td className="px-4 py-4 text-center hidden lg:table-cell">
+                        <Sparkline
+                          data={agency.empH}
+                          width={72}
+                          height={24}
+                          color="#0ea5e9"
+                        />
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 font-mono text-right old-style-nums hidden sm:table-cell">
                         {agency.s ? agency.s.split('-')[0] : '–'}
